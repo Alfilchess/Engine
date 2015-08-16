@@ -1,9 +1,11 @@
 ﻿using System;
+using Motor;
 
 using color = System.Int32;
 using sq = System.Int32;
 using colum = System.Int32;
 using fila = System.Int32;
+using bitbrd = System.UInt64;
 
 namespace Types
 {
@@ -893,7 +895,7 @@ namespace Types
     };
 
     //------------------------------------------------------------------------------
-    private static uint Index(color colr, sq escaqueReyNegro, sq escaqueReyBlanco, sq escaquePeon)
+    public static uint Index(color colr, sq escaqueReyNegro, sq escaqueReyBlanco, sq escaquePeon)
     {
       return (uint)(escaqueReyBlanco + (escaqueReyNegro << 6) + (colr << 12) + (cTypes.Columna(escaquePeon) << 13) + ((FILA.F7 - cTypes.Fila(escaquePeon)) << 15));
     }

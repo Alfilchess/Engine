@@ -19,13 +19,13 @@ namespace Types
   //---------------------------------------------------------------------------------------
   public class cTypes
   {
-    public static string LF = "\n";//System.Environment.NewLine;
+    public static string LF = System.Environment.NewLine;
 
     //---------------------------------------------------------------------------------------
     public static pnt Puntua(int nValorMedioJuego, int nValorFinalJuego)
     {
       cPuntos v;
-      v.m_nTotal = (UInt16)((nValorMedioJuego << 16) + (UInt16)nValorFinalJuego);
+      v.m_nTotal = 0;
       v.m_nMedioJuego = (Int16)(nValorMedioJuego - ((UInt16)(nValorFinalJuego) >> 15));
       v.m_nFinal = (Int16)nValorFinalJuego;
       return (pnt)(v.m_nTotal);
@@ -215,7 +215,7 @@ namespace Types
     //---------------------------------------------------------------------------------------
     public static bool is_ok_move(mov m)
     {
-      return GetFromCasilla(m) != GetToCasilla(m); //-- Catches also MOVE_NULL and MOVE_NONE
+      return GetFromCasilla(m) != GetToCasilla(m);
     }
   }
 
@@ -394,6 +394,6 @@ namespace Types
     [FieldOffset(2)]
     public Int16 m_nMedioJuego;
 
-    public const int CERO = 0;
+    //public const int CERO = 0;
   }
 }

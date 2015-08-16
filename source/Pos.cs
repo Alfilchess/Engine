@@ -415,8 +415,10 @@ namespace Motor
             cHashZobrist.m_sqPeon[c][pt][s] = rk.GetRand();
         }
       }
+
       for (colum f = COLUMNA.A; f <= COLUMNA.H; ++f)
         cHashZobrist.m_EnPaso[f] = rk.GetRand();
+      
       for (int cf = cEnroque.NO_ENROQUE; cf <= cEnroque.CUALQUIER_ENROQUE; ++cf)
       {
         bitbrd b = (bitbrd)cf;
@@ -426,6 +428,7 @@ namespace Motor
           cHashZobrist.m_Enroque[cf] ^= k != 0 ? k : rk.GetRand();
         }
       }
+
       cHashZobrist.m_Bando = rk.GetRand();
       cHashZobrist.m_Exclusion = rk.GetRand();
       for (int i = 0; i < cColor.SIZE; i++)
@@ -1050,8 +1053,8 @@ namespace Motor
     //-- https://chessprogramming.wikispaces.com/SEE+-+The+Swap+Algorithm
     public int SEEReducido(mov m)
     {
-      //if (cPosicion.PieceValue[cFaseJuego.FASE_MEDIOJUEGO][GetPiezaMovida(m)] <= cPosicion.PieceValue[cFaseJuego.FASE_MEDIOJUEGO][GetPieza(cTypes.GetToCasilla(m))])
-      // return cValoresJuego.GANA;
+      if (cPosicion.m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][GetPiezaMovida(m)] <= cPosicion.m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][GetPieza(cTypes.GetToCasilla(m))])
+       return cValoresJuego.GANA;
       return SEE(m);
     }
 

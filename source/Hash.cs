@@ -129,7 +129,8 @@ namespace Motor
   //----------------------------------------------------------------------------------------
   public class cTablaHash
   {
-    public List<cTablaHashStruct> m_lstTabla;
+    //public List<cTablaHashStruct> m_lstTabla;
+    public cTablaHashStruct[] m_lstTabla;
 
     public const uint CLUSTER_SIZE = 4;
     private UInt32 m_nMask;
@@ -164,10 +165,12 @@ namespace Motor
 
       m_nMask = m_nHashSize - CLUSTER_SIZE;
 
-      m_lstTabla = null;
-      m_lstTabla = new List<cTablaHashStruct>((int)m_nHashSize);
+      //m_lstTabla = null;
+      //m_lstTabla = new List<cTablaHashStruct>((int)m_nHashSize);
+      m_lstTabla = new cTablaHashStruct[m_nHashSize];
       for (int i = 0; i < m_nHashSize; i++)
-        m_lstTabla.Add(new cTablaHashStruct());
+        //m_lstTabla.Add(new cTablaHashStruct());
+        m_lstTabla[i] = new cTablaHashStruct();
     }
 
     //----------------------------------------------------------------------------------------
@@ -176,7 +179,7 @@ namespace Motor
       if (m_lstTabla != null)
       {
         m_nHashFull = 0;
-        for (int i = 0; i < m_lstTabla.Count; i++)
+        for (int i = 0; i < m_lstTabla.Length; i++)
         {
           m_lstTabla[i].Clear();
         }
@@ -190,13 +193,16 @@ namespace Motor
       UInt32 nClave = (UInt32)(clave >> 32);
       if (m_lstTabla != null)
       {
-        for (uint i = 0; i < CLUSTER_SIZE; ++i, ++tte)
+        uint i = 0;
+        while (i < CLUSTER_SIZE)
         {
           if (m_lstTabla[tte].GetClave() == nClave)
           {
             m_lstTabla[tte].m_nIteraccion = m_nIteraccion;
             return m_lstTabla[tte];
           }
+          ++i;
+          ++tte;
         }
       }
       return null;
@@ -227,8 +233,8 @@ namespace Motor
           }
 
           //-- Casos de reemplazo de la clave Hash
-          if (((claveExistente.GetIteraccion() == m_nIteraccion || claveExistente.GetBound() == cBordes.BOUND_EXACT) ? 1 : 0)
-              - ((claveAReemplazar.GetIteraccion() == m_nIteraccion) ? 1 : 0) - ((claveExistente.GetDepth() < claveAReemplazar.GetDepth()) ? 1 : 0) < 0)
+          if (claveAReemplazar != claveExistente && (claveExistente.GetIteraccion() == m_nIteraccion || (claveExistente.GetBound() == cBordes.BOUND_EXACT &&
+            (claveAReemplazar.GetIteraccion() == m_nIteraccion || claveExistente.GetDepth() < claveAReemplazar.GetDepth()))))
             claveAReemplazar = claveExistente;
         }
 

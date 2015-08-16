@@ -218,8 +218,7 @@ namespace Motor
     public volatile bool m_bBuscando;
 
     //------------------------------------------------------------------------------------------
-    public cThread()
-      : base()
+    public cThread() : base()
     {
       m_bBuscando = exit = false;
       m_nMaxPly = m_nSplitPointSize = 0;
@@ -312,6 +311,119 @@ namespace Motor
       sp.mutex.Liberar();
       cMotor.m_Threads.mutex.Liberar();
     }
+
+    //------------------------------------------------------------------------------------------
+    public override void OnIdle()
+    {
+
+      cSplitPoint this_sp = m_nSplitPointSize != 0 ? m_SplitPointActivo : null;
+      while (true)
+      {
+
+
+        while (!m_bBuscando || exit)
+        {
+          if (exit)
+          {
+            return;
+          }
+
+          mutex.Bloquear();
+
+          if (this_sp != null && this_sp.slavesMask.none())
+          {
+            mutex.Liberar();
+            break;
+          }
+
+
+
+
+          if (!m_bBuscando && !exit)
+            sleepCondition.Wait(mutex);
+          mutex.Liberar();
+        }
+
+        if (m_bBuscando)
+        {
+          cMotor.m_Threads.mutex.Bloquear();
+          cSplitPoint sp = m_SplitPointActivo;
+          cMotor.m_Threads.mutex.Liberar();
+          cStackMov[] stack = new cStackMov[cSearch.MAX_PLY_PLUS_6];
+          int ss = 2;
+          for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
+            stack[i] = new cStackMov();
+          cPosicion pos = new cPosicion(sp.pos, this);
+          for (int i = sp.ssPos - 2, n = 0; n < 5; n++, i++)
+            stack[ss - 2 + n].From(sp.ss[i]);
+          stack[ss].splitPoint = sp;
+          sp.mutex.Bloquear();
+          m_posActiva = pos;
+          if (sp.nodeType == cTipoNodo.NO_PV)
+            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.NO_PV, true);
+          else if (sp.nodeType == cTipoNodo.PV)
+            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.PV, true);
+          else if (sp.nodeType == cTipoNodo.RAIZ)
+            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.RAIZ, true);
+          m_bBuscando = false;
+          m_posActiva = null;
+          sp.slavesMask[idx] = false;
+          sp.allSlavesSearching = false;
+          sp.nodes += (UInt32)pos.GetNodos();
+
+
+          if (this != sp.masterThread
+            && sp.slavesMask.none())
+          {
+            sp.masterThread.Signal();
+          }
+
+
+
+          sp.mutex.Liberar();
+          if (cMotor.m_Threads.Count > 2)
+            for (int i = 0; i < cMotor.m_Threads.Count; ++i)
+            {
+              int size = cMotor.m_Threads[i].m_nSplitPointSize;
+              sp = size != 0 ? cMotor.m_Threads[i].m_SplitPoints[size - 1] : null;
+              if (sp != null
+                && sp.allSlavesSearching
+                && Disponible(cMotor.m_Threads[i]))
+              {
+
+                cMotor.m_Threads.mutex.Bloquear();
+                sp.mutex.Bloquear();
+                if (sp.allSlavesSearching
+                  && Disponible(cMotor.m_Threads[i]))
+                {
+                  sp.slavesMask[idx] = true;
+                  m_SplitPointActivo = sp;
+                  m_bBuscando = true;
+                }
+                sp.mutex.Liberar();
+                cMotor.m_Threads.mutex.Liberar();
+                break;
+              }
+            }
+        }
+
+
+        if (this_sp != null && this_sp.slavesMask.none())
+        {
+          this_sp.mutex.Bloquear();
+          bool finished = this_sp.slavesMask.none();
+          this_sp.mutex.Liberar();
+          if (finished)
+            return;
+        }
+      }
+    }
+
+    //------------------------------------------------------------------------------------------
+    public virtual void Bucle()
+    {
+      OnIdle();
+    }
   }
 
   //------------------------------------------------------------------------------------------
@@ -368,7 +480,7 @@ namespace Motor
     //--  Máximo de 16 procesadores
     public const int MAX_THREADS = 16;
 
-    public ply minimumSplitDepth;
+    public ply minimumSplitDepth = 0;
     public cExclusionMutua mutex = new cExclusionMutua();
     public cExclusionMutua sleepCondition = new cExclusionMutua();
     public cRelojThread m_RelojThread;
@@ -440,7 +552,8 @@ namespace Motor
     {
       int nThreads = cMotor.m_mapConfig["Threads"].Get();
 
-      minimumSplitDepth = nThreads < 16 ? 8 * cPly.ONE_PLY : 15 * cPly.ONE_PLY;
+      if (minimumSplitDepth == 0)
+        minimumSplitDepth = nThreads < 16 ? 8 * cPly.ONE_PLY : 15 * cPly.ONE_PLY;
 
       while (Count < nThreads)
       {
@@ -510,7 +623,7 @@ namespace Motor
       for (cReglas it = new cReglas(pos, cMovType.LEGAL); it.GetActualMov() != 0; ++it)
         if (limits.searchmoves.Count == 0
             || IsSearching(limits.searchmoves, it.GetActualMov()))
-          cSearch.RootMoves.Add(new RootMove(it.GetActualMov()));
+          cSearch.RootMoves.Add(new cRaizMov(it.GetActualMov()));
 
       Principal().m_bBuscando = true;
       Principal().Signal();

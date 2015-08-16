@@ -107,7 +107,7 @@ namespace Motor
     public static cEvalPesos weight_option(string mgOpt, string egOpt, pnt internalWeight)
     {
       return new cEvalPesos(cMotor.m_mapConfig[mgOpt].Get() * cTypes.GetMedioJuego(internalWeight) / 100,
-                              cMotor.m_mapConfig[egOpt].Get() * cTypes.GetFinalJuego(internalWeight) / 100);
+        cMotor.m_mapConfig[egOpt].Get() * cTypes.GetFinalJuego(internalWeight) / 100);
     }
 
     //----------------------------------------------------------------------------------------------------------
@@ -158,12 +158,12 @@ namespace Motor
     {
       if (colr == cColor.BLANCO && Pt == cPieza.REY)
       {
-        return cPuntos.CERO;
+        return 0;
       }
 
       bitbrd b;
       sq s;
-      pnt nPuntos = cPuntos.CERO;
+      pnt nPuntos = 0;
 
       type NextPt = (colr == cColor.BLANCO ? Pt : (Pt + 1));
       color colorVS = (colr == cColor.BLANCO ? cColor.NEGRO : cColor.BLANCO);
@@ -263,7 +263,7 @@ namespace Motor
       int attackUnits;
       sq nCasillaRey = pos.GetRey(colr);
 
-      pnt score = ei.m_Peones.ReyProtegido(pos, nCasillaRey, colr);
+      pnt score = 0;//ei.m_Peones.ReyProtegido(pos, nCasillaRey, colr);
 
       if (ei.m_AtaquesAlRey[colorVS] != 0)
       {
@@ -339,7 +339,7 @@ namespace Motor
       color colorVS = (colr == cColor.BLANCO ? cColor.NEGRO : cColor.BLANCO);
 
       bitbrd b, weakEnemies;
-      pnt nPuntos = cPuntos.CERO;
+      pnt nPuntos = 0;
 
       weakEnemies = pos.PiezasColor(colorVS) & ~evalInfo.m_Ataques[colorVS][cPieza.PEON] & evalInfo.m_Ataques[colr][cPieza.NAN];
 
@@ -368,7 +368,7 @@ namespace Motor
       color colorVS = (colr == cColor.BLANCO ? cColor.NEGRO : cColor.BLANCO);
 
       bitbrd b, squaresToQueen, defendedSquares, unsafeSquares;
-      pnt nPuntos = cPuntos.CERO;
+      pnt nPuntos = 0;
 
       b = ei.m_Peones.GetPeonesPasados(colr);
 
@@ -434,7 +434,7 @@ namespace Motor
       bitbrd b = ei.m_Peones.GetPeonesPasados(colr) | ei.m_Peones.GetPeonesACoronar(colr);
 
       if (0 == b || pos.MaterialPieza(cTypes.Contrario(colr)) != 0)
-        return cPuntos.CERO;
+        return 0;
 
       return m_Imparable * (cTypes.FilaProxima(colr, cBitBoard.Adelantado(colr, b)));
     }
@@ -461,7 +461,7 @@ namespace Motor
     {
       cEvalInfo eval = new cEvalInfo();
       pnt nPuntos;
-      pnt[] movilidad = new pnt[] { cPuntos.CERO, cPuntos.CERO };
+      pnt[] movilidad = new pnt[] { 0, 0 };
       cThread thread = pos.ThreadActive();
       nPuntos = pos.GetPuntosPeon() + (pos.ColorMueve() == cColor.BLANCO ? m_Tempo : -m_Tempo);
 

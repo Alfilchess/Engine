@@ -90,12 +90,11 @@ namespace InOut
       config["Ponder"] = new cOptConfig("Ponder", config.Count, false, null, true);
       config["Log"] = new cOptConfig("Log", config.Count, false, null, true);
       config["OwnBook"] = new cOptConfig("OwnBook", config.Count, true, null, true);
-      config["MultiPV"] = new cOptConfig("MultiPV", config.Count, 1, 1, 5, null, false, false);
-      config["UCI_Chess960"] = new cOptConfig("UCI_Chess960", config.Count, false, null, false);
-      config["Level"] = new cOptConfig("Level", config.Count, 10, 1, 10, cOptConfig.OnLevel, true, false);
+      config["MultiPV"] = new cOptConfig("MultiPV", config.Count, 1, 1, 3, null, true, false);
+      config["UCI_Chess960"] = new cOptConfig("UCI_Chess960", config.Count, false, null, true);
+      config["Level"] = new cOptConfig("Level", config.Count, 10, 1, 10, cOptConfig.OnLevel, false, false);
       config["UCI_EngineAbout"] = new cOptConfig("UCI_EngineAbout", config.Count, "www.alfilchess.com", null, true);
   
-
       config["MOVILIDAD_MEDIO_JUEGO"] = new cOptConfig("MOVILIDAD_MEDIO_JUEGO", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
       config["MOVILIDAD_FINAL"] = new cOptConfig("MOVILIDAD_FINAL", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
       config["PEON_DEFENDIDO_MEDIO_JUEGO"] = new cOptConfig("PEON_DEFENDIDO_MEDIO_JUEGO", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
@@ -122,11 +121,12 @@ namespace InOut
       config["PROFUNDIDAD_DE_FRACTURA"] = new cOptConfig("PROFUNDIDAD_DE_FRACTURA", config.Count, 17, 0, 12, cOptConfig.OnThread, false, true); //16.6//2
       config["FACTOR_CONTENCION"] = new cOptConfig("FACTOR_CONTENCION", config.Count, 50, -50, 50, null, false, true);
 
-      config["CONTROL_DE_HORIZONTE"] = new cOptConfig("CONTROL_DE_HORIZONTE", config.Count, 80, 0, 50, null, false, true);
-      config["CONTROL_DE_EMERGENCIA"] = new cOptConfig("CONTROL_DE_EMERGENCIA", config.Count, 1, 0, 30000, null, false, true);
-      config["TIEMPO_EXTRA"] = new cOptConfig("TIEMPO_EXTRA", config.Count, 1, 0, 5000, null, false, true);
-      config["TIEMPO_MINIMO"] = new cOptConfig("TIEMPO_MINIMO", config.Count, 1, 0, 5000, null, false, true);
-      config["TIEMPO_LENTO"] = new cOptConfig("TIEMPO_LENTO", config.Count, 9, 10, 1000, null, false, true);
+      config["CONTROL_DE_HORIZONTE"] = new cOptConfig("CONTROL_DE_HORIZONTE", config.Count, 40, 0, 100, null, false, true);
+
+      config["CONTROL_DE_EMERGENCIA"] = new cOptConfig("CONTROL_DE_EMERGENCIA", config.Count, 60, 0, 100, null, false, true);//60
+      config["TIEMPO_EXTRA"] = new cOptConfig("TIEMPO_EXTRA", config.Count, 30, 0, 100, null, false, true);//30
+      config["TIEMPO_MINIMO"] = new cOptConfig("TIEMPO_MINIMO", config.Count, 20, 0, 100, null, false, true);//20
+      config["TIEMPO_LENTO"] = new cOptConfig("TIEMPO_LENTO", config.Count, 80, 10, 100, null, false, true);//80
     }
 
     //---------------------------------------------------------------------------------

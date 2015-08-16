@@ -74,9 +74,9 @@ namespace InOut
       m_nFactorInestabilidad = 1;
       m_nTiempoDisponible = m_nTiempoMaximo = Math.Max(control.time[nColor], nTiempoMinimo);
 
-      for (int i = 1; i <= (control.movestogo != 0 ? Math.Min(control.movestogo, nCalculoDeHorizonte) : nCalculoDeHorizonte); ++i)
+      for (int i = 1; i <= (control.movestogo != 0 ? Math.Min(control.movestogo, 50) : 50); ++i)
       {
-        int nTiempo = control.time[nColor] + control.inc[nColor] * (i - 1) - nEmergencia - nTiempoExtra * Math.Min(i, nEmergencia);
+        int nTiempo = control.time[nColor] + control.inc[nColor] * (i - 1) - nEmergencia - nTiempoExtra * Math.Min(i, nCalculoDeHorizonte);
         nTiempo = Math.Max(nTiempo, 0);
 
         int t1 = nTiempoMinimo + TiempoRestante(nTiempo, i, nPly, nJuegoLento, TipoReloj.OPTIMO);

@@ -11,24 +11,71 @@ using color = System.Int32;
 using NodeType = System.Int32;
 using sq = System.Int32;
 using System.IO;
+
 namespace Motor
 {
-
-  public struct NodeTypeS
+  //-----------------------------------------------------------------------------------
+  public struct cTipoNodo
   {
-    public const int Root = 0, PV = 1, NonPV = 2;
+    public const int RAIZ = 0, PV = 1, NO_PV = 2;
   };
-  public class RootMove
+
+  //-----------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------
+  public class cRaizMov
   {
-    public val score;
-    public val prevScore;
-    public List<mov> pv = new List<mov>();
-    public RootMove(mov m)
+    public val m_nVal;
+    public val m_LastVal;
+    public List<mov> m_PV = new List<mov>();
+    public cRaizMov(mov m)
     {
-      score = prevScore = -cValoresJuego.INFINITO;
-      pv.Add(m);
-      pv.Add(cMovType.MOV_NAN);
+      m_nVal = m_LastVal = -cValoresJuego.INFINITO;
+      m_PV.Add(m);
+      m_PV.Add(cMovType.MOV_NAN);
     }
+    /*
+    public static void Ordenar(List<cRaizMov> data, int firstMove, int lastMove)
+    {
+      cRaizMov tmp;
+      int p, q;
+
+      for (p = firstMove + 1; p < lastMove; p++)
+      {
+        tmp = data[p];
+        for (q = p; q != firstMove && data[q - 1].m_nVal < tmp.m_nVal; --q)
+          data[q] = data[q - 1];
+        data[q] = tmp;
+      }
+    }      
+*/
+    //------------------------------------------------------------------------------------------------
+    public static void Ordenar(List<cRaizMov> data, int left, int right)
+    {
+      int i = left - 1,
+      j = right;
+
+      while (true)
+      {
+        int d = data[left].m_nVal;
+        do i++; while (data[i].m_nVal > d);
+        do j--; while (data[j].m_nVal < d);
+
+        if (i < j) 
+        {
+          cRaizMov tmp = data[i];
+          data[i] = data[j];
+          data[j] = tmp;
+        }
+        else
+        {
+          if (left < j)    Ordenar(data, left, j);
+          if (++j < right) Ordenar(data, j, right);
+          return;
+        }
+      }
+    }
+
+
     public void extract_pv_from_tt(cPosicion pos)
     {
       cPosInfo[] estate = new cPosInfo[cSearch.MAX_PLY_PLUS_6];
@@ -37,13 +84,13 @@ namespace Motor
       cTablaHashStruct tte;
       int st = 0;
       int ply = 1;
-      mov m = pv[0];
-      val expectedScore = score;
-      pv.Clear();
+      mov m = m_PV[0];
+      val expectedScore = m_nVal;
+      m_PV.Clear();
       do
       {
-        pv.Add(m);
-        pos.DoMov(pv[ply++ - 1], estate[st++]);
+        m_PV.Add(m);
+        pos.DoMov(m_PV[ply++ - 1], estate[st++]);
         tte = cMotor.m_TablaHash.Buscar(pos.ClaveHash());
         expectedScore = -expectedScore;
       } while (tte != null
@@ -52,12 +99,10 @@ namespace Motor
           && pos.IsLegalMov(m, pos.pinned_pieces(pos.ColorMueve()))
           && ply < cSearch.MAX_PLY
           && (!pos.IsTablas() || ply <= 2));
-      pv.Add(cMovType.MOV_NAN);
+      m_PV.Add(cMovType.MOV_NAN);
       while (--ply != 0)
-        pos.DesMov(pv[ply - 1]);
+        pos.DesMov(m_PV[ply - 1]);
     }
-
-
 
     public void insert_pv_in_tt(cPosicion pos)
     {
@@ -70,21 +115,22 @@ namespace Motor
       do
       {
         tte = cMotor.m_TablaHash.Buscar(pos.ClaveHash());
-        if (tte == null || tte.GetMove() != pv[idx])
-          cMotor.m_TablaHash.Save(pos.ClaveHash(), cValoresJuego.NAN, cBordes.BOUND_NONE, cPly.DEPTH_NONE, pv[idx], cValoresJuego.NAN);
-        pos.DoMov(pv[idx++], state[st++]);
-      } while (pv[idx] != cMovType.MOV_NAN);
+        if (tte == null || tte.GetMove() != m_PV[idx])
+          cMotor.m_TablaHash.Save(pos.ClaveHash(), cValoresJuego.NAN, cBordes.BOUND_NONE, cPly.DEPTH_NONE, m_PV[idx], cValoresJuego.NAN);
+        pos.DoMov(m_PV[idx++], state[st++]);
+      } while (m_PV[idx] != cMovType.MOV_NAN);
       while (idx != 0)
-        pos.DesMov(pv[--idx]);
+        pos.DesMov(m_PV[--idx]);
     }
   }
+
   public class cSearch
   {
     public const int MAX_PLY = 120;
     public const int MAX_PLY_PLUS_6 = MAX_PLY + 6;
     public static cSignal Signals;
     public static cControlReloj Limits = new cControlReloj();
-    public static List<RootMove> RootMoves = new List<RootMove>();
+    public static List<cRaizMov> RootMoves = new List<cRaizMov>();
     public static cPosicion RootPos;
     public static color RootColor;
     public static Int64 SearchTime;
@@ -111,7 +157,7 @@ namespace Motor
 
     public static val futility_margin(ply d)
     {
-      return (100 * d);
+      return (cValoresJuego.PEON_MJ * d);
     }
 
     public static ply reduction(int i, ply d, int mn, int PvNode)
@@ -159,30 +205,7 @@ namespace Motor
       }
     }
 
-
-    public static UInt64 static_perft(cPosicion pos, ply depth)
-    {
-      cPosInfo st = new cPosInfo();
-      UInt64 cnt = 0;
-      cInfoJaque ci = new cInfoJaque(pos);
-      bool leaf = depth == 2 * cPly.ONE_PLY;
-      for (cReglas it = new cReglas(pos, cMovType.LEGAL); it.GetActualMov() != cMovType.MOV_NAN; ++it)
-      {
-        pos.DoMov(it.GetActualMov(), st, ci, pos.IsJaque(it.GetActualMov(), ci));
-        cnt += leaf ? (UInt64)(new cReglas(pos, cMovType.LEGAL)).Size() : cSearch.static_perft(pos, depth - cPly.ONE_PLY);
-        pos.DesMov(it.GetActualMov());
-      }
-      return cnt;
-    }
-    public static UInt64 perft(cPosicion pos, ply depth)
-    {
-      return depth > cPly.ONE_PLY ? cSearch.static_perft(pos, depth) : (UInt64)(new cReglas(pos, cMovType.LEGAL)).Size();
-    }
-
-
-
-
-
+   
     public static void think()
     {
       RootColor = RootPos.ColorMueve();
@@ -192,7 +215,7 @@ namespace Motor
       DrawValue[cTypes.Contrario(RootColor)] = cValoresJuego.TABLAS + (cf);
       if (RootMoves.Count == 0)
       {
-        RootMoves.Add(new RootMove(cMovType.MOV_NAN));
+        RootMoves.Add(new cRaizMov(cMovType.MOV_NAN));
         cMotor.m_Consola.Print("info depth 0 score ", AccionConsola.GET);
         cMotor.m_Consola.Print(cUci.Puntos(RootPos.Jaques() != 0 ? -cValoresJuego.MATE : cValoresJuego.TABLAS, -cValoresJuego.INFINITO, cValoresJuego.INFINITO), AccionConsola.RELEASE);
         goto finalize;
@@ -203,7 +226,7 @@ namespace Motor
         if (bookMove != 0 && existRootMove(RootMoves, bookMove))
         {
           int bestpos = Buscar(RootMoves, 0, RootMoves.Count, bookMove);
-          RootMove temp = RootMoves[0];
+          cRaizMov temp = RootMoves[0];
           RootMoves[0] = RootMoves[bestpos];
           RootMoves[bestpos] = temp;
           goto finalize;
@@ -237,9 +260,9 @@ namespace Motor
       }
 
       cMotor.m_Consola.Print("bestmove ", AccionConsola.GET);
-      cMotor.m_Consola.Print(cUci.GetMovimiento(RootMoves[0].pv[0], RootPos.IsChess960() != false), AccionConsola.NADA);
+      cMotor.m_Consola.Print(cUci.GetMovimiento(RootMoves[0].m_PV[0], RootPos.IsChess960() != false), AccionConsola.NADA);
       cMotor.m_Consola.Print(" ponder ", AccionConsola.NADA);
-      cMotor.m_Consola.Print(cUci.GetMovimiento(RootMoves[0].pv[1], RootPos.IsChess960() != false), AccionConsola.NADA);
+      cMotor.m_Consola.Print(cUci.GetMovimiento(RootMoves[0].m_PV[1], RootPos.IsChess960() != false), AccionConsola.NADA);
       cMotor.m_Consola.Print(cTypes.LF, AccionConsola.RELEASE);
     }
 
@@ -273,7 +296,7 @@ namespace Motor
 
 
         for (int i = 0; i < RootMoves.Count; ++i)
-          RootMoves[i].prevScore = RootMoves[i].score;
+          RootMoves[i].m_LastVal = RootMoves[i].m_nVal;
 
         for (PVIdx = 0; PVIdx < MultiPV && !Signals.STOP; ++PVIdx)
         {
@@ -281,16 +304,16 @@ namespace Motor
           if (depth >= 5)
           {
             delta = 16;
-            alpha = Math.Max(RootMoves[PVIdx].prevScore - delta, -cValoresJuego.INFINITO);
-            beta = Math.Min(RootMoves[PVIdx].prevScore + delta, cValoresJuego.INFINITO);
+            alpha = Math.Max(RootMoves[PVIdx].m_LastVal - delta, -cValoresJuego.INFINITO);
+            beta = Math.Min(RootMoves[PVIdx].m_LastVal + delta, cValoresJuego.INFINITO);
           }
 
 
           while (true)
           {
-            bestValue = search(pos, stack, ss, alpha, beta, depth * cPly.ONE_PLY, false, NodeTypeS.Root, false);
+            bestValue = search(pos, stack, ss, alpha, beta, depth * cPly.ONE_PLY, false, cTipoNodo.RAIZ, false);
 
-            sort(RootMoves, PVIdx, RootMoves.Count);
+            cRaizMov.Ordenar(RootMoves, PVIdx, RootMoves.Count);
 
 
             for (int i = 0; i <= PVIdx; ++i)
@@ -302,8 +325,7 @@ namespace Motor
               break;
 
 
-            if ((bestValue <= alpha || bestValue >= beta)
-                && cReloj.Now() - SearchTime > 3000)
+            if ((bestValue <= alpha || bestValue >= beta) && (cReloj.Now() - SearchTime) > 1000)
               cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
 
 
@@ -320,13 +342,11 @@ namespace Motor
             delta += delta / 2;
           }
 
-          sort(RootMoves, 0, PVIdx + 1);
-          if (PVIdx + 1 == MultiPV || cReloj.Now() - SearchTime > 3000)
+          //cRaizMov.Ordenar(RootMoves, 0, PVIdx + 1);
+
+          if ((PVIdx + 1 == MultiPV && MultiPV > 1)  || (cReloj.Now() - SearchTime) > 1000)
             cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
         }
-
-
-
 
         if (Limits.mate != 0
             && bestValue >= cValoresJuego.MATE_MAXIMO
@@ -355,8 +375,8 @@ namespace Motor
 
     public static val search(cPosicion pos, cStackMov[] ss, int ssPos, val alpha, val beta, ply depth, bool cutNode, NodeType NT, bool SpNode)
     {
-      bool RootNode = (NT == NodeTypeS.Root);
-      bool PvNode = (NT == NodeTypeS.PV || NT == NodeTypeS.Root);
+      bool RootNode = (NT == cTipoNodo.RAIZ);
+      bool PvNode = (NT == cTipoNodo.PV || NT == cTipoNodo.RAIZ);
       mov[] quietsSearched = new mov[64];
       cPosInfo st = new cPosInfo();
       cTablaHashStruct tte;
@@ -413,7 +433,7 @@ namespace Motor
       excludedMove = ss[ssPos].excludedMove;
       posKey = excludedMove != 0 ? pos.GetClaveHashExclusion() : pos.ClaveHash();
       tte = cMotor.m_TablaHash.Buscar(posKey);
-      ss[ssPos].ttMove = ttMove = RootNode ? RootMoves[PVIdx].pv[0] : tte != null ? tte.GetMove() : cMovType.MOV_NAN;
+      ss[ssPos].ttMove = ttMove = RootNode ? RootMoves[PVIdx].m_PV[0] : tte != null ? tte.GetMove() : cMovType.MOV_NAN;
       ttValue = (tte != null) ? value_from_tt(tte.GetValue(), ss[ssPos].ply) : cValoresJuego.NAN;
 
 
@@ -474,9 +494,9 @@ namespace Motor
       {
         if (depth <= cPly.ONE_PLY
             && eval + razor_margin(3 * cPly.ONE_PLY) <= alpha)
-          return qsearch(pos, ss, ssPos, alpha, beta, cPly.DEPTH_ZERO, NodeTypeS.NonPV, false);
+          return qsearch(pos, ss, ssPos, alpha, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
         val ralpha = alpha - razor_margin(depth);
-        val v = qsearch(pos, ss, ssPos, ralpha, ralpha + 1, cPly.DEPTH_ZERO, NodeTypeS.NonPV, false);
+        val v = qsearch(pos, ss, ssPos, ralpha, ralpha + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
         if (v <= ralpha)
           return v;
       }
@@ -504,8 +524,8 @@ namespace Motor
          + (eval - beta) / cValoresJuego.PEON_MJ * cPly.ONE_PLY;
         pos.DoNullMov(st);
         ss[ssPos + 1].skipNullMove = 1;
-        nullValue = depth - R < cPly.ONE_PLY ? -qsearch(pos, ss, ssPos + 1, -beta, -beta + 1, cPly.DEPTH_ZERO, NodeTypeS.NonPV, false)
-                              : -search(pos, ss, ssPos + 1, -beta, -beta + 1, depth - R, !cutNode, NodeTypeS.NonPV, false);
+        nullValue = depth - R < cPly.ONE_PLY ? -qsearch(pos, ss, ssPos + 1, -beta, -beta + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                              : -search(pos, ss, ssPos + 1, -beta, -beta + 1, depth - R, !cutNode, cTipoNodo.NO_PV, false);
         ss[ssPos + 1].skipNullMove = 0;
         pos.undo_null_move();
         if (nullValue >= beta)
@@ -517,8 +537,8 @@ namespace Motor
             return nullValue;
 
           ss[ssPos].skipNullMove = 1;
-          val v = depth - R < cPly.ONE_PLY ? qsearch(pos, ss, ssPos, beta - 1, beta, cPly.DEPTH_ZERO, NodeTypeS.NonPV, false)
-                              : search(pos, ss, ssPos, beta - 1, beta, depth - R, false, NodeTypeS.NonPV, false);
+          val v = depth - R < cPly.ONE_PLY ? qsearch(pos, ss, ssPos, beta - 1, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                              : search(pos, ss, ssPos, beta - 1, beta, depth - R, false, cTipoNodo.NO_PV, false);
           ss[ssPos].skipNullMove = 0;
           if (v >= beta)
             return nullValue;
@@ -542,7 +562,7 @@ namespace Motor
           {
             ss[ssPos].currentMove = move;
             pos.DoMov(move, st, ci2, pos.IsJaque(move, ci2));
-            value = -search(pos, ss, ssPos + 1, -rbeta, -rbeta + 1, rdepth, !cutNode, NodeTypeS.NonPV, false);
+            value = -search(pos, ss, ssPos + 1, -rbeta, -rbeta + 1, rdepth, !cutNode, cTipoNodo.NO_PV, false);
             pos.DesMov(move);
             if (value >= rbeta)
               return value;
@@ -555,7 +575,7 @@ namespace Motor
       {
         ply d = depth - 2 * cPly.ONE_PLY - (PvNode ? cPly.DEPTH_ZERO : depth / 4);
         ss[ssPos].skipNullMove = 1;
-        search(pos, ss, ssPos, alpha, beta, d, true, PvNode ? NodeTypeS.PV : NodeTypeS.NonPV, false);
+        search(pos, ss, ssPos, alpha, beta, d, true, PvNode ? cTipoNodo.PV : cTipoNodo.NO_PV, false);
         ss[ssPos].skipNullMove = 0;
         tte = cMotor.m_TablaHash.Buscar(posKey);
         ttMove = (tte != null) ? tte.GetMove() : cMovType.MOV_NAN;
@@ -631,7 +651,7 @@ namespace Motor
           val rBeta = ttValue - depth;
           ss[ssPos].excludedMove = move;
           ss[ssPos].skipNullMove = 1;
-          value = search(pos, ss, ssPos, rBeta - 1, rBeta, depth / 2, cutNode, NodeTypeS.NonPV, false);
+          value = search(pos, ss, ssPos, rBeta - 1, rBeta, depth / 2, cutNode, cTipoNodo.NO_PV, false);
           ss[ssPos].skipNullMove = 0;
           ss[ssPos].excludedMove = cMovType.MOV_NAN;
           if (value < rBeta)
@@ -644,12 +664,10 @@ namespace Motor
             && !captureOrPromotion
             && !inCheck
             && !dangerous
-          /* &&  move != ttMove Already implicit in the next condition */
             && bestValue > cValoresJuego.MATE_MAXIMO_VS)
         {
 
-          if (depth < 16 * cPly.ONE_PLY
-              && moveCount >= FutilityMoveCounts[improving ? 1 : 0][depth])
+          if (depth < 16 * cPly.ONE_PLY && moveCount >= FutilityMoveCounts[improving ? 1 : 0][depth])
           {
             if (SpNode)
               splitPoint.mutex.Bloquear();
@@ -712,12 +730,12 @@ namespace Motor
           ply d = Math.Max(newDepth - ss[ssPos].reduction, cPly.ONE_PLY);
           if (SpNode)
             alpha = splitPoint.alpha;
-          value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d, true, NodeTypeS.NonPV, false);
+          value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d, true, cTipoNodo.NO_PV, false);
 
           if (value > alpha && ss[ssPos].reduction >= 4 * cPly.ONE_PLY)
           {
             ply d2 = Math.Max(newDepth - 2 * cPly.ONE_PLY, cPly.ONE_PLY);
-            value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d2, true, NodeTypeS.NonPV, false);
+            value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d2, true, cTipoNodo.NO_PV, false);
           }
           doFullDepthSearch = (value > alpha && ss[ssPos].reduction != cPly.DEPTH_ZERO);
           ss[ssPos].reduction = cPly.DEPTH_ZERO;
@@ -730,18 +748,18 @@ namespace Motor
           if (SpNode)
             alpha = splitPoint.alpha;
           value = newDepth < cPly.ONE_PLY ?
-                givesCheck ? -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, NodeTypeS.NonPV, true)
-                           : -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, NodeTypeS.NonPV, false)
-                           : -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, newDepth, !cutNode, NodeTypeS.NonPV, false);
+                givesCheck ? -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, true)
+                           : -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                           : -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, newDepth, !cutNode, cTipoNodo.NO_PV, false);
         }
 
 
 
         if (PvNode && (pvMove || (value > alpha && (RootNode || value < beta))))
           value = newDepth < cPly.ONE_PLY ?
-                        givesCheck ? -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, NodeTypeS.PV, true)
-                           : -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, NodeTypeS.PV, false)
-                           : -search(pos, ss, ssPos + 1, -beta, -alpha, newDepth, false, NodeTypeS.PV, false);
+                        givesCheck ? -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, cTipoNodo.PV, true)
+                           : -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, cTipoNodo.PV, false)
+                           : -search(pos, ss, ssPos + 1, -beta, -alpha, newDepth, false, cTipoNodo.PV, false);
 
         pos.DesMov(move);
 
@@ -759,11 +777,11 @@ namespace Motor
         if (RootNode)
         {
           int rmPos = Buscar(RootMoves, 0, RootMoves.Count, move);
-          RootMove rm = RootMoves[rmPos];
+          cRaizMov rm = RootMoves[rmPos];
 
           if (pvMove || value > alpha)
           {
-            rm.score = value;
+            rm.m_nVal = value;
             rm.extract_pv_from_tt(pos);
 
 
@@ -775,7 +793,7 @@ namespace Motor
 
 
 
-            rm.score = -cValoresJuego.INFINITO;
+            rm.m_nVal = -cValoresJuego.INFINITO;
         }
         if (value > bestValue)
         {
@@ -833,7 +851,7 @@ namespace Motor
 
     public static val qsearch(cPosicion pos, cStackMov[] ss, int ssPos, val alpha, val beta, ply depth, NodeType NT, bool InCheck)
     {
-      bool PvNode = (NT == NodeTypeS.PV);
+      bool PvNode = (NT == cTipoNodo.PV);
       cPosInfo st = null;
       cTablaHashStruct tte;
       hash posKey;
@@ -1048,23 +1066,21 @@ namespace Motor
         if (depth == 1 && !updated)
           continue;
         int d = (updated ? depth : depth - 1);
-        if (RootMoves[i].pv.Count > 0 && RootMoves[i].pv[0] != cMovType.MOV_NAN && 0 < d)
+        if (RootMoves[i].m_PV.Count > 0 && RootMoves[i].m_PV[0] != cMovType.MOV_NAN && 0 < d)
         {
-          val v = (updated ? RootMoves[i].score : RootMoves[i].prevScore);
+          val v = (updated ? RootMoves[i].m_nVal : RootMoves[i].m_LastVal);
           if (s.Length != 0)
             s.Append(cTypes.LF);
-          bool bShow = true;
+          /*bool bShow = true;
           for (int j = 0; j < d; ++j)
           {
-            if (RootMoves[i].pv.Count > j && RootMoves[i].pv[j] == cMovType.MOV_NAN)
+            if (RootMoves[i].m_PV.Count > j && RootMoves[i].m_PV[j] == cMovType.MOV_NAN)
               bShow = false;
-          }
-          if (RootMoves[i].pv[0] != cMovType.MOV_NAN)
+          }*/
+          if (RootMoves[i].m_PV[0] != cMovType.MOV_NAN)
           {
             s.Append("info depth ");
             s.Append(d);
-
-
             s.Append(" score ");
             s.Append((i == PVIdx ? cUci.Puntos(v, alpha, beta) : cUci.Puntos(v, -cValoresJuego.INFINITO, cValoresJuego.INFINITO)));
             s.Append(" nodes ");
@@ -1077,7 +1093,7 @@ namespace Motor
             s.Append(Program.m_CPU.Get() * 10);
             s.Append(" hashfull ");
             s.Append(cMotor.m_TablaHash.HashFullPercent());
-            if (bShow)
+            //if (bShow)
             {
               if (i > 0)
               {
@@ -1086,10 +1102,10 @@ namespace Motor
               }
               s.Append(" pv");
 
-              for (int j = 0; RootMoves[i].pv.Count > j && RootMoves[i].pv[j] != cMovType.MOV_NAN && j < d; ++j)
+              for (int j = 0; RootMoves[i].m_PV.Count > j && RootMoves[i].m_PV[j] != cMovType.MOV_NAN && j < d; ++j)
               {
                 s.Append(" ");
-                s.Append(cUci.GetMovimiento(RootMoves[i].pv[j], pos.IsChess960() != false));
+                s.Append(cUci.GetMovimiento(RootMoves[i].m_PV[j], pos.IsChess960() != false));
               }
             }
           }
@@ -1098,152 +1114,28 @@ namespace Motor
       return s.ToString();
     }
 
-    public static int Buscar(List<RootMove> RootMoves, int firstPos, int lastPos, mov moveToFind)
+    public static int Buscar(List<cRaizMov> RootMoves, int firstPos, int lastPos, mov moveToFind)
     {
       for (int i = firstPos; i < lastPos; i++)
       {
-        if (RootMoves[i].pv[0] == moveToFind)
+        if (RootMoves[i].m_PV[0] == moveToFind)
           return i;
       }
       return -1;
     }
-    public static bool existRootMove(List<RootMove> moves, mov m)
+    public static bool existRootMove(List<cRaizMov> moves, mov m)
     {
       int moveLength = moves.Count;
       if (moveLength == 0)
         return false;
       for (int i = 0; i < moveLength; i++)
       {
-        if (moves[i].pv[0] == m)
+        if (moves[i].m_PV[0] == m)
           return true;
       }
       return false;
     }
-    public static void sort(List<RootMove> data, int firstMove, int lastMove)
-    {
-      RootMove tmp;
-      int p, q;
-      for (p = firstMove + 1; p < lastMove; p++)
-      {
-        tmp = data[p];
-        for (q = p; q != firstMove && data[q - 1].score < tmp.score; --q)
-          data[q] = data[q - 1];
-        data[q] = tmp;
-      }
-    }
-  }
-  public partial class cThread
-  {
-
-    public override void OnIdle()
-    {
 
 
-      cSplitPoint this_sp = m_nSplitPointSize != 0 ? m_SplitPointActivo : null;
-      while (true)
-      {
-
-
-        while (!m_bBuscando || exit)
-        {
-          if (exit)
-          {
-            return;
-          }
-
-          mutex.Bloquear();
-
-          if (this_sp != null && this_sp.slavesMask.none())
-          {
-            mutex.Liberar();
-            break;
-          }
-
-
-
-
-          if (!m_bBuscando && !exit)
-            sleepCondition.Wait(mutex);
-          mutex.Liberar();
-        }
-
-        if (m_bBuscando)
-        {
-          cMotor.m_Threads.mutex.Bloquear();
-          cSplitPoint sp = m_SplitPointActivo;
-          cMotor.m_Threads.mutex.Liberar();
-          cStackMov[] stack = new cStackMov[cSearch.MAX_PLY_PLUS_6];
-          int ss = 2;
-          for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
-            stack[i] = new cStackMov();
-          cPosicion pos = new cPosicion(sp.pos, this);
-          for (int i = sp.ssPos - 2, n = 0; n < 5; n++, i++)
-            stack[ss - 2 + n].From(sp.ss[i]);
-          stack[ss].splitPoint = sp;
-          sp.mutex.Bloquear();
-          m_posActiva = pos;
-          if (sp.nodeType == NodeTypeS.NonPV)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, NodeTypeS.NonPV, true);
-          else if (sp.nodeType == NodeTypeS.PV)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, NodeTypeS.PV, true);
-          else if (sp.nodeType == NodeTypeS.Root)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, NodeTypeS.Root, true);
-          m_bBuscando = false;
-          m_posActiva = null;
-          sp.slavesMask[idx] = false;
-          sp.allSlavesSearching = false;
-          sp.nodes += (UInt32)pos.GetNodos();
-
-
-          if (this != sp.masterThread
-              && sp.slavesMask.none())
-          {
-            sp.masterThread.Signal();
-          }
-
-
-
-          sp.mutex.Liberar();
-          if (cMotor.m_Threads.Count > 2)
-            for (int i = 0; i < cMotor.m_Threads.Count; ++i)
-            {
-              int size = cMotor.m_Threads[i].m_nSplitPointSize;
-              sp = size != 0 ? cMotor.m_Threads[i].m_SplitPoints[size - 1] : null;
-              if (sp != null
-                  && sp.allSlavesSearching
-                  && Disponible(cMotor.m_Threads[i]))
-              {
-
-                cMotor.m_Threads.mutex.Bloquear();
-                sp.mutex.Bloquear();
-                if (sp.allSlavesSearching
-                    && Disponible(cMotor.m_Threads[i]))
-                {
-                  sp.slavesMask[idx] = true;
-                  m_SplitPointActivo = sp;
-                  m_bBuscando = true;
-                }
-                sp.mutex.Liberar();
-                cMotor.m_Threads.mutex.Liberar();
-                break;
-              }
-            }
-        }
-
-
-        if (this_sp != null && this_sp.slavesMask.none())
-        {
-          this_sp.mutex.Bloquear();
-          bool finished = this_sp.slavesMask.none();
-          this_sp.mutex.Liberar();
-          if (finished)
-            return;
-        }
-      }
-    }
-    public virtual void Bucle()
-    {
-      OnIdle();
-    }
   }
 }

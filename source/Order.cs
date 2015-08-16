@@ -102,7 +102,6 @@ namespace Motor
       end += ((m_TTMov != cMovType.MOV_NAN) ? 1 : 0);
     }
 
-
     //-----------------------------------------------------------------------------------------------------------------
     private static void Insert(cMov[] moves, int begin, int end)
     {

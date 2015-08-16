@@ -18,8 +18,7 @@ namespace Motor
     //----------------------------------------------------------------------------------
     public class cTablaHashMaterial : cHashTable<cMaterial.cStructMaterial>
     {
-      public cTablaHashMaterial()
-        : base(8192)
+      public cTablaHashMaterial() : base(8192)
       {
         for (int i = 0; i < this.Size; i++)
           m_TablaHash.Add(new cMaterial.cStructMaterial());
@@ -66,7 +65,6 @@ namespace Motor
       }
     }
 
-
     public static int[] m_lstCoeficientes = new int[] { 1852, -162, -1122, -183, 249, -154 };
 
     public static int[][] m_lstCoeficienteCuadraticos = new int[][] {
@@ -75,7 +73,7 @@ namespace Motor
       new int[]{ 35,     271,   -4,      0,      0,      0 },
       new int[]{ 0,      105,    4,      0,      0,      0 },
       new int[]{ -27,   -2,      46,     100, -141,      0 },
-      new int[]{ -177,   25,     129,    142, -137,     0 } };
+      new int[]{ -177,   25,     129,    142, -137,      0 } };
 
     internal static int[][] m_lstCoeficienteCuadraticosVs = new int[][] {
       new int[]{ 0,     0,      0,     0,      0,      0 },
@@ -85,13 +83,11 @@ namespace Motor
       new int[]{ 50,   40,     23,   -22,      0,      0 },
       new int[]{ 98,  105,    -39,   141,    274,      0 } };
 
-
     public static cEndgame[] m_EvalKXK = new cEndgame[2] { new cEndgame(cColor.BLANCO, stFinalesTipo.KXK), new cEndgame(cColor.NEGRO, stFinalesTipo.KXK) };
     public static cEndgame[] m_EvalKBPsK = new cEndgame[2] { new cEndgame(cColor.BLANCO, stFinalesTipo.KBPsK), new cEndgame(cColor.NEGRO, stFinalesTipo.KBPsK) };
     public static cEndgame[] m_EvalKQKRPs = new cEndgame[2] { new cEndgame(cColor.BLANCO, stFinalesTipo.KQKRPs), new cEndgame(cColor.NEGRO, stFinalesTipo.KQKRPs) };
     public static cEndgame[] m_EvalKPsK = new cEndgame[2] { new cEndgame(cColor.BLANCO, stFinalesTipo.KPsK), new cEndgame(cColor.NEGRO, stFinalesTipo.KPsK) };
     public static cEndgame[] m_EvalKPKP = new cEndgame[2] { new cEndgame(cColor.BLANCO, stFinalesTipo.KPKP), new cEndgame(cColor.NEGRO, stFinalesTipo.KPKP) };
-
 
     //----------------------------------------------------------------------------------
     public static bool IsKXK(cPosicion pos, color colr)
@@ -258,8 +254,8 @@ namespace Motor
     {
       val materialPiezas = pos.MaterialPieza(cColor.BLANCO) + pos.MaterialPieza(cColor.NEGRO);
 
-      return materialPiezas >= cValoresJuego.LIMITE_MJ ? cFaseJuego.FASE_MEDIOJUEGO
-      : materialPiezas <= cValoresJuego.LIMITE_FINAL ? cFaseJuego.FASE_FINAL
+      return materialPiezas >= cValoresJuego.LIMITE_MJ ? cFaseJuego.MEDIO_JUEGO
+      : materialPiezas <= cValoresJuego.LIMITE_FINAL ? cFaseJuego.FINAL
       : (Phase)(((materialPiezas - cValoresJuego.LIMITE_FINAL) * 128) / (cValoresJuego.LIMITE_MJ - cValoresJuego.LIMITE_FINAL));
     }
   }
