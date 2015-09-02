@@ -21,8 +21,8 @@ namespace Motor
     public static cThreadPool m_Threads = new cThreadPool();
     public static cTablaHash m_TablaHash = new cTablaHash();
     public static cConsola m_Consola = new cConsola(System.Console.In, System.Console.Out);
-    private static string m_strInfo = "Alfil 15.8.16";
-    private static string m_strAutor = "id author Enrique Sanchez Acosta";
+    private static string m_strInfo = "Engine C#";
+    private static string m_strAutor = "id author Enrique Sanchez";
     public static cConfigFile m_ConfigFile = new cConfigFile("alfil.cfg");
 
     private static string[] Defaults = new string[] 
