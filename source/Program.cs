@@ -4,12 +4,15 @@ using System.Text;
 using System.Configuration;
 using InOut;
 using Types;
+using Finales;
 
 using System.Threading;
 using System.Linq;
 using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 using System.Diagnostics;
+
+using type = System.Int32;
 
 namespace Motor
 {
@@ -21,12 +24,13 @@ namespace Motor
     public static cThreadPool m_Threads = new cThreadPool();
     public static cTablaHash m_TablaHash = new cTablaHash();
     public static cConsola m_Consola = new cConsola(System.Console.In, System.Console.Out);
-    private static string m_strInfo = "Engine C#";
+    private static string m_strInfo = "ExperimentalEngine 15.9.11 (beta)";
     private static string m_strAutor = "id author Enrique Sanchez";
-    public static cConfigFile m_ConfigFile = new cConfigFile("alfil.cfg");
+    public static cConfigFile m_ConfigFile = new cConfigFile("ExperimentalEngine.cfg");
 
     private static string[] Defaults = new string[] 
       {
+        "/8/8/8/8/1P6/K5k1/8 b - - 0 1", 
         "3rr1k1/p1p4p/1p4p1/3PPn2/q1P5/3Q4/PBP3PP/1R3RK1 w - - 0 22",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 10",
@@ -44,6 +48,7 @@ namespace Motor
       return s.ToString();
     }
 
+
     //---------------------------------------------------------------------------------------------
     public cMotor(string[] args)
     {
@@ -60,8 +65,12 @@ namespace Motor
       m_Threads.Init();
       m_TablaHash.Init((ulong)m_mapConfig["Hash"].Get());
 
-      //EGTB.Init(AppDomain.CurrentDomain.BaseDirectory, new WindowsStreamCreator());
 
+      cTablaFinales.Init(AppDomain.CurrentDomain.BaseDirectory);
+
+      //cPosicion pos = new cPosicion("8/8/8/K2P3k/8/8/8/8 b - - 0 1", false, null);
+
+     
       //cMotor.Test();
       cUci.Recibir(args);
 

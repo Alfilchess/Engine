@@ -263,7 +263,7 @@ namespace Motor
       int attackUnits;
       sq nCasillaRey = pos.GetRey(colr);
 
-      pnt score = 0;//ei.m_Peones.ReyProtegido(pos, nCasillaRey, colr);
+      pnt score = 0;
 
       if (ei.m_AtaquesAlRey[colorVS] != 0)
       {

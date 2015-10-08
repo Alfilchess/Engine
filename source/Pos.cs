@@ -27,7 +27,7 @@ namespace Motor
     private bitbrd[] byTypeBB = new bitbrd[cPieza.SIZE];
     private bitbrd[] byColorBB = new bitbrd[cColor.SIZE];
     private int[][] m_nNumPiezas = new int[cColor.SIZE][] { new int[cPieza.SIZE], new int[cPieza.SIZE] };
-    private sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] { new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] }, new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] } };
+    public sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] { new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] }, new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] } };
     private int[] m_nIndex = new int[cCasilla.ESCAQUES];
 
     private int[] m_nMaskEnroque = new int[cCasilla.ESCAQUES];

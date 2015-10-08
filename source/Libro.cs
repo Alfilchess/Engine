@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Resources;
 
 using Types;
 using Motor;
@@ -234,7 +235,7 @@ namespace InOut
     private const int m_nTurno = 780; //-- Número de filas
 
     private cAleatorio m_Rand;
-    private Stream m_Stream;
+    private Stream m_Stream = null;
 
     //------------------------------------------------------------------------------------
     public cLibro()
@@ -265,14 +266,18 @@ namespace InOut
 
       try
       {
-        Assembly myAssembly = Assembly.GetExecutingAssembly();
-        Stream memStream = myAssembly.GetManifestResourceStream("alfilbk.bin");
-
-        GZipStream Gzipstream = new GZipStream(memStream, CompressionMode.Decompress);
-        m_Stream = new MemoryStream();
-        CopyTo(Gzipstream, m_Stream);
+        //Assembly myAssembly = Assembly.GetExecutingAssembly();
+        //Stream memStream = myAssembly.GetManifestResourceStream("alfilbk.bin.gz");
+        using(Stream stream = new MemoryStream(Motor.source.Resource.Resource.ExperimentalEnginebk_bin))
+        {
+          GZipStream Gzipstream = new GZipStream(stream, CompressionMode.Decompress);
+          m_Stream=new MemoryStream();
+          CopyTo(Gzipstream, m_Stream);
+        }
+          
+       
       }
-      catch (Exception /*ex*/)
+      catch (Exception )
       {
         return false;
       }

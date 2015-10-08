@@ -325,7 +325,7 @@ namespace Motor
               break;
 
 
-            if ((bestValue <= alpha || bestValue >= beta) && (cReloj.Now() - SearchTime) > 1000)
+            if ((bestValue <= alpha || bestValue >= beta)/* && (cReloj.Now() - SearchTime) > 1000*/)
               cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
 
 
@@ -342,9 +342,9 @@ namespace Motor
             delta += delta / 2;
           }
 
-          //cRaizMov.Ordenar(RootMoves, 0, PVIdx + 1);
+          cRaizMov.Ordenar(RootMoves, 0, PVIdx + 1);
 
-          if ((PVIdx + 1 == MultiPV && MultiPV > 1)  || (cReloj.Now() - SearchTime) > 1000)
+          //if ((PVIdx + 1 == MultiPV && MultiPV > 1)  || (cReloj.Now() - SearchTime) > 1000)
             cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
         }
 

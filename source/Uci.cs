@@ -265,7 +265,9 @@ namespace InOut
     //---------------------------------------------------------------------------------
     public static void Recibir(String[] argv)
     {
-      cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
+      //cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
+      cPosicion pos = new cPosicion("8/8/3N1K2/8/1B6/4k3/8/8 w - - 1 78 ", false, cMotor.m_Threads.Principal());
+      
       string token = "", cmd = "";
 
       for (int i = 0; i < argv.Length; ++i)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Types;
+using Finales;
 
 using hash = System.UInt64;
 using type = System.Int32;
@@ -258,7 +259,25 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public val KBNK(cPosicion pos)
     {
-      sq posReyGanador = pos.GetRey(m_cFuerte);
+      color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      val result = cValoresJuego.TABLAS;
+      if(SetConjuntoPiezasPosicion(pos))
+      {
+        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        if(pr.found)
+        {
+          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          {
+            if(m_cFuerte==pos.ColorMueve())
+              result=(cValoresJuego.MATE-pr.ply);
+            else
+              result=-cValoresJuego.MATE+pr.ply;
+          }
+
+        }
+      }
+      return result;
+      /*sq posReyGanador = pos.GetRey(m_cFuerte);
       sq posReyPerdedor = pos.GetRey(m_cDebil);
       sq posAlfil = pos.GetList(m_cFuerte, cPieza.ALFIL)[0];
 
@@ -271,24 +290,44 @@ namespace Motor
       val result = cValoresJuego.GANA + m_lstValorCerrado[cBitBoard.Distancia(posReyGanador, posReyPerdedor)]
                   + m_lstValorEsquinas[posReyPerdedor];
 
-      return m_cFuerte == pos.ColorMueve() ? result : -result;
+      return m_cFuerte == pos.ColorMueve() ? result : -result;*/
     }
 
     //-----------------------------------------------------------------------------------------------
-    public val KPK(cPosicion posicion)
+    public val KPK(cPosicion pos)
     {
-      sq posReyBlanco = Normalizar(posicion, m_cFuerte, posicion.GetRey(m_cFuerte));
-      sq posReyNegro = Normalizar(posicion, m_cFuerte, posicion.GetRey(m_cDebil));
-      sq casillaFromPos = Normalizar(posicion, m_cFuerte, posicion.GetList(m_cFuerte, cPieza.PEON)[0]);
+      //sq posReyBlanco = Normalizar(posicion, m_cFuerte, posicion.GetRey(m_cFuerte));
+      //sq posReyNegro = Normalizar(posicion, m_cFuerte, posicion.GetRey(m_cDebil));*/
+      //sq casillaFromPos = Normalizar(posicion, m_cFuerte, posicion.GetList(m_cFuerte, cPieza.PEON)[0]);
 
-      color colr = m_cFuerte == posicion.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      //color colr = m_cFuerte == posicion.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
 
-      if (!cBitbaseKPK.Buscar(posReyBlanco, casillaFromPos, posReyNegro, colr))
-        return cValoresJuego.TABLAS;
+      //if (!cBitbaseKPK.Buscar(posReyBlanco, casillaFromPos, posReyNegro, colr))
+      //  return cValoresJuego.TABLAS;
 
-      val result = cValoresJuego.GANA + cValoresJuego.PEON_FINAL + cTypes.Fila(casillaFromPos);
+      //val result = cValoresJuego.GANA + cValoresJuego.PEON_FINAL + cTypes.Fila(casillaFromPos);
 
-      return m_cFuerte == posicion.ColorMueve() ? result : -result;
+      //return m_cFuerte == posicion.ColorMueve() ? result : -result;*/
+
+
+      color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      val result = cValoresJuego.TABLAS;
+      if(SetConjuntoPiezasPosicion(pos))
+      {
+        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        if(pr.found)
+        {
+          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          {
+            if(m_cFuerte==pos.ColorMueve())
+              result=(cValoresJuego.MATE-pr.ply);
+            else
+              result=-cValoresJuego.MATE+pr.ply;
+          }
+
+        }
+      }
+      return result;
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -322,8 +361,26 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public val KRKB(cPosicion pos)
     {
-      val result = (m_lstValorBorde[pos.GetRey(m_cDebil)]);
-      return m_cFuerte == pos.ColorMueve() ? result : -result;
+      color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      val result = cValoresJuego.TABLAS;
+      if(SetConjuntoPiezasPosicion(pos))
+      {
+        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        if(pr.found)
+        {
+          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          {
+            if(m_cFuerte==pos.ColorMueve())
+              result=(cValoresJuego.MATE-pr.ply);
+            else
+              result=-cValoresJuego.MATE+pr.ply;
+          }
+
+        }
+      }
+      return result;
+      //val result = (m_lstValorBorde[pos.GetRey(m_cDebil)]);
+      //return m_cFuerte == pos.ColorMueve() ? result : -result;
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -354,7 +411,25 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public val KQKR(cPosicion pos)
     {
-      sq winnerKSq = pos.GetRey(m_cFuerte);
+      color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      val result = cValoresJuego.TABLAS;
+      if(SetConjuntoPiezasPosicion(pos))
+      {
+        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        if(pr.found)
+        {
+          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          {
+            if (m_cFuerte==pos.ColorMueve())
+              result=(cValoresJuego.MATE-pr.ply);
+            else
+              result=-cValoresJuego.MATE+pr.ply;
+          }
+            
+        }
+      }
+      return result;
+      /*sq winnerKSq = pos.GetRey(m_cFuerte);
       sq loserKSq = pos.GetRey(m_cDebil);
 
       val result = cValoresJuego.DAMA_FINAL
@@ -362,7 +437,7 @@ namespace Motor
                   + m_lstValorBorde[loserKSq]
                   + m_lstValorCerrado[cBitBoard.Distancia(winnerKSq, loserKSq)];
 
-      return m_cFuerte == pos.ColorMueve() ? result : -result;
+      return m_cFuerte == pos.ColorMueve() ? result : -result;*/
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -709,7 +784,19 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public factor KPKP(cPosicion pos)
     {
-      sq nCasillaReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
+      color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      val result = cFactorEscala.TABLAS;
+      if(SetConjuntoPiezasPosicion(pos))
+      {
+        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        if(pr.found)
+        {
+          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+            result=cFactorEscala.NAN;
+        }
+      }
+      return result;
+      /*sq nCasillaReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
       sq nCasillaReyNegro = Normalizar(pos, m_cFuerte, pos.GetRey(m_cDebil));
       sq nCasillaPeon = Normalizar(pos, m_cFuerte, pos.GetList(m_cFuerte, cPieza.PEON)[0]);
 
@@ -718,7 +805,228 @@ namespace Motor
       if (cTypes.Fila(nCasillaPeon) >= FILA.F5 && cTypes.Columna(nCasillaPeon) != COLUMNA.A)
         return cFactorEscala.NAN;
 
-      return cBitbaseKPK.Buscar(nCasillaReyBlanco, nCasillaPeon, nCasillaReyNegro, us) ? cFactorEscala.NAN : cFactorEscala.TABLAS;
+      return cBitbaseKPK.Buscar(nCasillaReyBlanco, nCasillaPeon, nCasillaReyNegro, us) ? cFactorEscala.NAN : cFactorEscala.TABLAS;*/
     }
+
+    //-----------------------------------------------------------------------------------------------
+    public static bool SetConjuntoPiezasPosicion(cPosicion pos)
+    {
+
+      whitePieceSquares.Clear();
+      whiteTypesSquares.Clear();
+      blackPieceSquares.Clear();
+      blackTypesSquares.Clear();
+
+      for(type pt = cPieza.PEON; pt<=cPieza.REY; ++pt)
+      {
+        for(int i = 0; i<pos.GetNum(cColor.BLANCO, pt); i++)
+        {
+          whitePieceSquares.Add(pos.GetList(cColor.BLANCO, pt)[i]);
+          whiteTypesSquares.Add(pt);
+        }
+
+        for(int i = 0; i<pos.GetNum(cColor.NEGRO, pt); i++)
+        {
+          blackPieceSquares.Add(pos.GetList(cColor.NEGRO, pt)[i]);
+          blackTypesSquares.Add(pt);
+        }
+      }
+
+      enPassantSquare=pos.CasillaEnPaso();
+      whosTurn=pos.ColorMueve();
+
+      return true;
+    }
+
+    static bool SetConjuntoPiezasFEN(string fen)
+    {
+      byte index = 0;
+      byte spc = 0;
+      byte spacers = 0;
+
+      whosTurn=0;
+      enPassantSquare=0;
+      whitePieceSquares.Clear();
+      whiteTypesSquares.Clear();
+      blackPieceSquares.Clear();
+      blackTypesSquares.Clear();
+
+      if(fen.Contains("a3"))
+        enPassantSquare=cTablaFinales.a8toa1[40];
+      else if(fen.Contains("b3"))
+        enPassantSquare=cTablaFinales.a8toa1[41];
+      else if(fen.Contains("c3"))
+        enPassantSquare=cTablaFinales.a8toa1[42];
+      else if(fen.Contains("d3"))
+        enPassantSquare=cTablaFinales.a8toa1[43];
+      else if(fen.Contains("e3"))
+        enPassantSquare=cTablaFinales.a8toa1[44];
+      else if(fen.Contains("f3"))
+        enPassantSquare=cTablaFinales.a8toa1[45];
+      else if(fen.Contains("g3"))
+        enPassantSquare=cTablaFinales.a8toa1[46];
+      else if(fen.Contains("h3"))
+        enPassantSquare=cTablaFinales.a8toa1[47];
+
+      if(fen.Contains("a6"))
+        enPassantSquare=cTablaFinales.a8toa1[16];
+      else if(fen.Contains("b6"))
+        enPassantSquare=cTablaFinales.a8toa1[17];
+      else if(fen.Contains("c6"))
+        enPassantSquare=cTablaFinales.a8toa1[18];
+      else if(fen.Contains("d6"))
+        enPassantSquare=cTablaFinales.a8toa1[19];
+      else if(fen.Contains("e6"))
+        enPassantSquare=cTablaFinales.a8toa1[20];
+      else if(fen.Contains("f6"))
+        enPassantSquare=cTablaFinales.a8toa1[21];
+      else if(fen.Contains("g6"))
+        enPassantSquare=cTablaFinales.a8toa1[22];
+      else if(fen.Contains("h6"))
+        enPassantSquare=cTablaFinales.a8toa1[23];
+
+      foreach(char c in fen)
+      {
+        if(index<64&&spc==0)
+        {
+          if(c=='1'&&index<63)
+          {
+            index++;
+          }
+          else if(c=='2'&&index<62)
+          {
+            index+=2;
+          }
+          else if(c=='3'&&index<61)
+          {
+            index+=3;
+          }
+          else if(c=='4'&&index<60)
+          {
+            index+=4;
+          }
+          else if(c=='5'&&index<59)
+          {
+            index+=5;
+          }
+          else if(c=='6'&&index<58)
+          {
+            index+=6;
+          }
+          else if(c=='7'&&index<57)
+          {
+            index+=7;
+          }
+          else if(c=='8'&&index<56)
+          {
+            index+=8;
+          }
+          else if(c=='P')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.PAWN);
+            index++;
+          }
+          else if(c=='N')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.KNIGHT);
+            index++;
+          }
+          else if(c=='B')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.BISHOP);
+            index++;
+          }
+          else if(c=='R')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.ROOK);
+            index++;
+          }
+          else if(c=='Q')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.QUEEN);
+            index++;
+          }
+          else if(c=='K')
+          {
+            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
+            whiteTypesSquares.Add(cTablaFinales.KING);
+            index++;
+          }
+          else if(c=='p')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.PAWN);
+            index++;
+          }
+          else if(c=='n')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.KNIGHT);
+            index++;
+          }
+          else if(c=='b')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.BISHOP);
+            index++;
+          }
+          else if(c=='r')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.ROOK);
+            index++;
+          }
+          else if(c=='q')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.QUEEN);
+            index++;
+          }
+          else if(c=='k')
+          {
+            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
+            blackTypesSquares.Add(cTablaFinales.KING);
+            index++;
+          }
+          else if(c=='/')
+          {
+            continue;
+          }
+          else if(c==' ')
+          {
+            spc++;
+          }
+        }
+        else
+        {
+          if((c=='w')&&(spacers<2))
+          {
+            whosTurn=(int)cColor.BLANCO;//;PlayerColor.White;
+          }
+          else if((c=='b')&&(spacers<2))
+          {
+            whosTurn=(int)cColor.NEGRO;//PlayerColor.Black;
+          }
+          else if(c==' ')
+          {
+            spacers++;
+          }
+        }
+      }
+      return true;
+    }
+
+    static List<int> whitePieceSquares = new List<int>();
+    static List<int> blackPieceSquares = new List<int>();
+    static List<int> whiteTypesSquares = new List<int>();
+    static List<int> blackTypesSquares = new List<int>();
+
+    static int whosTurn = 0;
+    static int enPassantSquare = 0;
   }
 }
