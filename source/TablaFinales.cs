@@ -2276,7 +2276,6 @@ namespace Finales
         
         if (currentStream != null)
         {
-          //currentStream=new FileStream(Motor.source.Resource.Resource.alfil, FileMode.Open);
           currentStream.Seek(0, SeekOrigin.Begin);
           egtb_loadindexes();
 
