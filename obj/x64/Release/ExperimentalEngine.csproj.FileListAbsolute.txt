@@ -1,0 +1,7 @@
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\bin\x64\Release\ExperimentalEngine.exe.config
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\bin\x64\Release\ExperimentalEngine.exe
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\bin\x64\Release\bin\ExperimentalEngine.resources.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\obj\x64\Release\Motor.source.Resource.Resource.resources
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\obj\x64\Release\ExperimentalEngine.csproj.GenerateResource.Cache
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\obj\x64\Release\bin\ExperimentalEngine.resources.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Engine\obj\x64\Release\ExperimentalEngine.exe

@@ -2056,85 +2056,93 @@ namespace Finales
     {
       ProbeResultType probeResult = new ProbeResultType();
 
-      if((blackSquares.Count==1)&&(whiteSquares.Count==1))
+      try
       {
-        probeResult.found=true;
-        probeResult.stm=MateResult.TABLAS;
-        probeResult.error="With only 2 kings, Draw is assumed";
-        return probeResult;
-      }
-
-      if((blackSquares.Count+whiteSquares.Count)>5)
-      {
-        probeResult.error="Max 5 man tables are supported";
-        probeResult.found=false;
-        return probeResult;
-      }
-
-      int side = realside;
-
-      if(!SetupEGTB(whiteSquares, whiteTypes, blackSquares, blackTypes, ref side, ref epsq))
-      {
-        probeResult.found=false;
-        probeResult.error="Could not find EGTB file: "+newFile;
-        return probeResult;
-      }
-
-      int dtm = 0;
-
-      if(egtb_get_dtm(side, epsq, ref dtm))
-      {
-        probeResult.found=true;
-        probeResult.stm=MateResult.NAN;
-        int res = 0;
-        int ply = 0;
-        unpackdist(dtm, ref res, ref ply);
-
-        int ret = 0;
-
-        if(res==iWMATE)
-          if(Reversed)
-            probeResult.stm=MateResult.MATE_NEGRAS;
-          else
-            probeResult.stm=MateResult.MATE_BLANCAS;
-        else if(res==iBMATE)
-          if(Reversed)
-            probeResult.stm=MateResult.MATE_BLANCAS;
-          else
-            probeResult.stm=MateResult.MATE_NEGRAS;
-        else if(res==iDRAW)
-          probeResult.stm=MateResult.TABLAS;
-
-        if(realside==0)
+        if((blackSquares.Count == 1) && (whiteSquares.Count == 1))
         {
-          if(probeResult.stm==MateResult.MATE_NEGRAS)
+          probeResult.found = true;
+          probeResult.stm = MateResult.TABLAS;
+          probeResult.error = "With only 2 kings, Draw is assumed";
+          return probeResult;
+        }
+
+        if((blackSquares.Count + whiteSquares.Count) > 5)
+        {
+          probeResult.error = "Max 5 man tables are supported";
+          probeResult.found = false;
+          return probeResult;
+        }
+
+        int side = realside;
+
+        if(!SetupEGTB(whiteSquares, whiteTypes, blackSquares, blackTypes, ref side, ref epsq))
+        {
+          probeResult.found = false;
+          probeResult.error = "Could not find EGTB file: " + newFile;
+          return probeResult;
+        }
+
+        int dtm = 0;
+
+        if(egtb_get_dtm(side, epsq, ref dtm))
+        {
+          probeResult.found = true;
+          probeResult.stm = MateResult.NAN;
+          int res = 0;
+          int ply = 0;
+          unpackdist(dtm, ref res, ref ply);
+
+          int ret = 0;
+
+          if(res == iWMATE)
+            if(Reversed)
+              probeResult.stm = MateResult.MATE_NEGRAS;
+            else
+              probeResult.stm = MateResult.MATE_BLANCAS;
+          else if(res == iBMATE)
+            if(Reversed)
+              probeResult.stm = MateResult.MATE_BLANCAS;
+            else
+              probeResult.stm = MateResult.MATE_NEGRAS;
+          else if(res == iDRAW)
+            probeResult.stm = MateResult.TABLAS;
+
+          if(realside == 0)
           {
-            ret=-ply;
+            if(probeResult.stm == MateResult.MATE_NEGRAS)
+            {
+              ret = -ply;
+            }
+            else if(probeResult.stm == MateResult.MATE_BLANCAS)
+            {
+              ret = ply;
+            }
           }
-          else if(probeResult.stm==MateResult.MATE_BLANCAS)
+          else
           {
-            ret=ply;
+            if(probeResult.stm == MateResult.MATE_BLANCAS)
+            {
+              ret = -ply;
+            }
+            else if(probeResult.stm == MateResult.MATE_NEGRAS)
+            {
+              ret = ply;
+            }
           }
+
+          probeResult.dtm = ret;
+          probeResult.ply = ply;
         }
         else
         {
-          if(probeResult.stm==MateResult.MATE_BLANCAS)
-          {
-            ret=-ply;
-          }
-          else if(probeResult.stm==MateResult.MATE_NEGRAS)
-          {
-            ret=ply;
-          }
+          probeResult.found = false;
         }
-
-        probeResult.dtm=ret;
-        probeResult.ply=ply;
       }
-      else
+      catch(Exception /*ex*/)
       {
-        probeResult.found=false;
+
       }
+      
 
       return probeResult;
     }

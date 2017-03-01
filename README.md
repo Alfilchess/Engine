@@ -1,6 +1,10 @@
 # Engine
 Motor de ajedrez
 
+Este motor incluye dentro de su ejecutable un libro de aperturas propio y una serie de tablas de finales de 3 piezas. No es por lo tanto adecuado por el momento para jugar torneos donde existan reglas específicas sobre el funcionamiento del motor.
+This engine includes into the executable an own book and endtables. It is therefore not suitable for the moment to play tournaments where there are specific rules on the operation of the engine.
+
+------------
 Debido a la imposibilidad de poder mantener las versiones anteriores de Alfil a un nivel aceptable y con el propósito de dar a la comunidad un nuevo motor de ajedrez con ideas nuevas y pensando siempre en la “interacción con el humano” más que en los rankings y en la velocidad. Se ha tomado la determinación de hacer un nuevo motor opensource en C#.
 
 Esta nueva versión en C# toma las ideas y el conocimiento adquirido tras más de 10 años de versiones de Alfil, comenzando de nuevo desde una base de Stockfish v5, añadiendo mejoras y comportamientos diferentes basados en programas opensource como:
@@ -20,5 +24,6 @@ Este es un nuevo proyecto en C# que principalmente deriva de stockfish pero que 
 At first it appeared as Alfil 15 but because of to the controversies that exist with chess engines and the sources from which they derive, has decided to change its name to a new project, to avoid confusion.
 
 This is a new project in C # mainly from stockfish but intended to serve as a working tool (in Spanish) for future chess engines and tools.
+
 
 Everyone is invited to collaborate.
