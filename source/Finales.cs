@@ -811,29 +811,34 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public static bool SetConjuntoPiezasPosicion(cPosicion pos)
     {
-
-      whitePieceSquares.Clear();
-      whiteTypesSquares.Clear();
-      blackPieceSquares.Clear();
-      blackTypesSquares.Clear();
-
-      for(type pt = cPieza.PEON; pt<=cPieza.REY; ++pt)
+      try
       {
-        for(int i = 0; i<pos.GetNum(cColor.BLANCO, pt); i++)
+        whitePieceSquares.Clear();
+        whiteTypesSquares.Clear();
+        blackPieceSquares.Clear();
+        blackTypesSquares.Clear();
+
+        for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
         {
-          whitePieceSquares.Add(pos.GetList(cColor.BLANCO, pt)[i]);
-          whiteTypesSquares.Add(pt);
+          for(int i = 0; i < pos.GetNum(cColor.BLANCO, pt); i++)
+          {
+            whitePieceSquares.Add(pos.GetList(cColor.BLANCO, pt)[i]);
+            whiteTypesSquares.Add(pt);
+          }
+
+          for(int i = 0; i < pos.GetNum(cColor.NEGRO, pt); i++)
+          {
+            blackPieceSquares.Add(pos.GetList(cColor.NEGRO, pt)[i]);
+            blackTypesSquares.Add(pt);
+          }
         }
 
-        for(int i = 0; i<pos.GetNum(cColor.NEGRO, pt); i++)
-        {
-          blackPieceSquares.Add(pos.GetList(cColor.NEGRO, pt)[i]);
-          blackTypesSquares.Add(pt);
-        }
+        enPassantSquare = pos.CasillaEnPaso();
+        whosTurn = pos.ColorMueve();
       }
-
-      enPassantSquare=pos.CasillaEnPaso();
-      whosTurn=pos.ColorMueve();
+      catch (Exception /*ex*/)
+      {
+      }
 
       return true;
     }
