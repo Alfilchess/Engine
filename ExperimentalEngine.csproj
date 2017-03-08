@@ -6,7 +6,8 @@
     <ProjectGuid>{435B7D8D-355D-40DE-A53A-511F30C82A90}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Motor</RootNamespace>
-    <StartupObject>Motor.Program</StartupObject>
+    <StartupObject>
+    </StartupObject>
     <ReleaseVersion>15.9</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
     <ApplicationIcon>source\Resource\ExperimentalEngine.ico</ApplicationIcon>
@@ -15,7 +16,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <UseMSBuildEngine>False</UseMSBuildEngine>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <PublishUrl>publicar\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -60,9 +61,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup />
-  <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
@@ -85,14 +84,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG;TABLEBASES;BOOK</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -110,6 +109,7 @@
     <Compile Include="source\BitBoard.cs" />
     <Compile Include="source\Config.cs" />
     <Compile Include="source\Consola.cs" />
+    <Compile Include="source\Cpu.cs" />
     <Compile Include="source\Eval.cs" />
     <Compile Include="source\Finales.cs" />
     <Compile Include="source\Hash.cs" />

@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F4769BD3-985F-46EC-B8F1-6FC4922235ED}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TableBases</RootNamespace>
+    <AssemblyName>TableBases</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="lzma\CommandLineParser.cs" />
+    <Compile Include="lzma\CRC.cs" />
+    <Compile Include="lzma\ICoder.cs" />
+    <Compile Include="lzma\IMatchFinder.cs" />
+    <Compile Include="lzma\InBuffer.cs" />
+    <Compile Include="lzma\LzBinTree.cs" />
+    <Compile Include="lzma\LzInWindow.cs" />
+    <Compile Include="lzma\LzmaBase.cs" />
+    <Compile Include="lzma\LzmaDecoder.cs" />
+    <Compile Include="lzma\LzmaEncoder.cs" />
+    <Compile Include="lzma\LzOutWindow.cs" />
+    <Compile Include="lzma\OutBuffer.cs" />
+    <Compile Include="lzma\RangeCoder.cs" />
+    <Compile Include="lzma\RangeCoderBit.cs" />
+    <Compile Include="lzma\RangeCoderBitTree.cs" />
+    <Compile Include="lzma\SevenZipHelper.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="TablaFinales.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\kbk.gtb.cp4" />
+    <None Include="Resources\kbkb.gtb.cp4" />
+    <None Include="Resources\kbkn.gtb.cp4" />
+    <None Include="Resources\kbnk.gtb.cp4" />
+    <None Include="Resources\knkn.gtb.cp4" />
+    <None Include="Resources\kpk.gtb.cp4" />
+    <None Include="Resources\kpkp.gtb.cp4" />
+    <None Include="Resources\kqk.gtb.cp4" />
+    <None Include="Resources\kqkr.gtb.cp4" />
+    <None Include="Resources\krk.gtb.cp4" />
+    <None Include="Resources\krkb.gtb.cp4" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
