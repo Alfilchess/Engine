@@ -4,17 +4,17 @@ Chess Engine in C# (UCI protocol and modifications for Chessaria)
 # Components
 
 Book - Polyglot format
+
 EngineConsole - UCI protocol and testing Chessaria (posible defines: CHESSARIA)
+
 EngineDLL - Core of the engine (posible defines: TABLEBASES, BOOK, CHESSARIA, OBSTACLES, OBSTACLES_TEST)
+
 Tablebases - Some Tablebases included int gtb format (kbk, kbkb, kbkn, kbnk, knkn, kpk, kpkp, kqk, kqkr, krk, krkb)
 
-------------
 # Tournaments
 
 Este motor incluye dentro de su ejecutable un libro de aperturas propio y una serie de tablas de finales de 3 piezas. No es por lo tanto adecuado por el momento para jugar torneos donde existan reglas específicas sobre el funcionamiento del motor.
 (This engine includes into the executable an own book and endtables. It is therefore not suitable for the moment to play tournaments where there are specific rules on the operation of the engine.)
-
-------------
 
 # Credits
 
@@ -27,6 +27,7 @@ This new version takes the ideas and knowledge gained from over 10 years of Alfi
 https://github.com/Alfilchess/Engine/tree/master/Credits
 
 Este es un nuevo proyecto en C# pretende servir como herramienta de trabajo (en castellano) para futuros motores y herramientas de ajedrez.
+
 (This is a new project in C # mainly from stockfish but intended to serve as a working tool (in Spanish) for future chess engines and tools.)
 
 Everyone is invited to collaborate.
