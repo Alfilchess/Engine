@@ -13,17 +13,9 @@ Since it is not possible to keep earlier versions of Alfil to an acceptable leve
 
 This new version takes the ideas and knowledge gained from over 10 years of Alfil versions, starting again from the source of Stockfish v5, adding over time, improvements and behaviors different programs based on opensource programs as:
 
-Stockfish Gaviota Ippolit / Robbolito Glaurung Crafty Critter …
+https://github.com/Alfilchess/Engine/tree/master/Credits
 
-También se han utilizado partes de otros proyectos derivados de Stockfish en c# como Portfish, Stockfish-CSharp-Port y Fishy.
-
-En un principio apareció como Alfil 15 pero debido a las controversias que existen con los motores de ajedrez y las fuentes de las que derivan, se ha decidido cambiar su nombre a un nuevo proyecto, para evitar confusiones.
-
-Este es un nuevo proyecto en C# que principalmente deriva de stockfish pero que pretende servir como herramienta de trabajo (en castellano) para futuros motores y herramientas de ajedrez.
-
-At first it appeared as Alfil 15 but because of to the controversies that exist with chess engines and the sources from which they derive, has decided to change its name to a new project, to avoid confusion.
-
+Este es un nuevo proyecto en C# pretende servir como herramienta de trabajo (en castellano) para futuros motores y herramientas de ajedrez.
 This is a new project in C # mainly from stockfish but intended to serve as a working tool (in Spanish) for future chess engines and tools.
-
 
 Everyone is invited to collaborate.
