@@ -11,6 +11,7 @@ using bitbrd = System.UInt64;
 using colum = System.Int32;
 using fila = System.Int32;
 using factor = System.Int32;
+using TableBases;
 
 //-- Sustituir por tabla de finales nalimov en cuanto haya tiempo
 namespace Motor

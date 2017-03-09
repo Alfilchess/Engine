@@ -4,9 +4,6 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Resources;
 
-using Types;
-using Motor;
-
 using hash = System.UInt64;
 using bitbrd = System.UInt64;
 using mov = System.Int32;
@@ -16,7 +13,7 @@ using pieza = System.Int32;
 namespace Book
 {
   //--  http://hgm.nubati.net/book_format.html
-  public class cLibro
+  public class cPolyglotBook
   {
     //-- Un libro Polyglot es una serie de "entradas" de 16 bytes. Todos los números enteros son
     //-- almacenados en formato big-endian, con el byte más alto primero (independientemente del tamaño)
@@ -30,8 +27,8 @@ namespace Book
     };
 
     //-- Números aleatorios de PolyGlot, utilizados para calcular las claves hash del libro 
-    private const long SIZE_OF_BOOKENTRY = 16;
-    private static readonly hash[] PG = new hash[781]{
+    public const long SIZE_OF_BOOKENTRY = 16;
+    public static readonly hash[] PG = new hash[781]{
        (0x9D39247E33776D41), (0x2AF7398005AAA5C7), (0x44DB015024623547), (0x9C15F73E62A76AE2),
        (0x75834465489C0C89), (0x3290AC3A203001BF), (0x0FBBAD1F61042279), (0xE83A908FF2FB60CA),
        (0x0D7E765D58755C10), (0x1A083822CEAFE02D), (0x9605D5F0E25EC3B0), (0xD021FF5CD13A2ED5),
@@ -229,19 +226,7 @@ namespace Book
        (0xCF3145DE0ADD4289), (0xD0E4427A5514FB72), (0x77C621CC9FB3A483), (0x67A34DAC4356550B),
        (0xF8D626AAAF278509),};
 
-    private const int nCasillaPeon = 0;
-    private const int m_nEnroque = 768; //-- Piezas * escaques
-    private const int m_nEnPaso = 772; //-- Flag de enroque
-    private const int m_nTurno = 780; //-- Número de filas
-
-    private cAleatorio m_Rand;
-    private Stream m_Stream = null;
-
-    //------------------------------------------------------------------------------------
-    public cLibro()
-    {
-      m_Rand = new cAleatorio((int)(InOut.cReloj.Now() % 1000));
-    }
+    public Stream m_Stream = null;
 
     //------------------------------------------------------------------------------------
     public void CopyTo(Stream input, Stream output)
@@ -249,44 +234,37 @@ namespace Book
       byte[] buffer = new byte[16 * 1024]; // Fairly arbitrary size
       int bytesRead;
 
-      while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+      while((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
       {
         output.Write(buffer, 0, bytesRead);
       }
     }
 
     //------------------------------------------------------------------------------------
-    public bool Open()
+    public int FindFirst(hash clave)
     {
-      if (m_Stream != null)
+      int low = 0, mid, high = (int)(m_Stream.Length / SIZE_OF_BOOKENTRY) - 1;
+      cPolyglotBook.stLineaLibro e = new cPolyglotBook.stLineaLibro();
+
+      while(low < high)
       {
-        m_Stream.Close();
-        m_Stream = null;
+        mid = (low + high) / 2;
+
+        m_Stream.Seek(mid * SIZE_OF_BOOKENTRY, SeekOrigin.Begin);
+        Read(ref e);
+        if(clave <= e.key)
+          high = mid;
+        else
+          low = mid + 1;
       }
 
-      try
-      {
-        //Assembly myAssembly = Assembly.GetExecutingAssembly();
-        //Stream memStream = myAssembly.GetManifestResourceStream("alfilbk.bin.gz");
-        using(Stream stream = new MemoryStream(Book.Properties.Resources.ExperimentalEnginebk_bin))
-        {
-          GZipStream Gzipstream = new GZipStream(stream, CompressionMode.Decompress);
-          m_Stream=new MemoryStream();
-          CopyTo(Gzipstream, m_Stream);
-        }
-      }
-      catch (Exception )
-      {
-        return false;
-      }
-
-      return true;
+      return low;
     }
 
     //------------------------------------------------------------------------------------
-    public bool Read(ref cLibro.stLineaLibro e)
+    public bool Read(ref cPolyglotBook.stLineaLibro e)
     {
-      if (m_Stream.Length == m_Stream.Position)
+      if(m_Stream.Length == m_Stream.Position)
         return false;
 
       byte[] byteReg = new byte[SIZE_OF_BOOKENTRY];
@@ -320,92 +298,31 @@ namespace Book
     }
 
     //------------------------------------------------------------------------------------
-    public int FindFirst(hash clave)
+    public bool Open()
     {
-      int low = 0, mid, high = (int)(m_Stream.Length / SIZE_OF_BOOKENTRY) - 1;
-      cLibro.stLineaLibro e = new cLibro.stLineaLibro();
-
-      while (low < high)
+      if (m_Stream != null)
       {
-        mid = (low + high) / 2;
-
-        m_Stream.Seek(mid * SIZE_OF_BOOKENTRY, SeekOrigin.Begin);
-        Read(ref e);
-        if (clave <= e.key)
-          high = mid;
-        else
-          low = mid + 1;
+        m_Stream.Close();
+        m_Stream = null;
       }
 
-      return low;
-    }
-
-    //------------------------------------------------------------------------------------
-    public static hash PolyglotKey(cPosicion posicion)
-    {
-      hash key = 0;
-      bitbrd bitBoard = posicion.Piezas();
-
-      while (bitBoard != 0)
+      try
       {
-        sq s = cBitBoard.GetLSB(ref bitBoard);
-        pieza pc = posicion.GetPieza(s);
-        int pieceOfs = 2 * (cTypes.TipoPieza(pc) - 1) + ((cTypes.GetColor(pc) == cColor.BLANCO) ? 1 : 0);
-        key ^= PG[nCasillaPeon + (64 * pieceOfs + s)];
-      }
-
-      bitBoard = (ulong)posicion.PosibleEnrocar(cEnroque.CUALQUIER_ENROQUE);
-
-      while (bitBoard != 0)
-        key ^= PG[m_nEnroque + cBitBoard.GetLSB(ref bitBoard)];
-
-      if (posicion.CasillaEnPaso() != cCasilla.NONE)
-        key ^= PG[m_nEnPaso + cTypes.Columna(posicion.CasillaEnPaso())];
-
-      if (posicion.ColorMueve() == cColor.BLANCO)
-        key ^= PG[m_nTurno + 0];
-
-      return key;
-    }
-
-    //------------------------------------------------------------------------------------
-    public mov Buscar(cPosicion posicion)
-    {
-      mov move = cMovType.MOV_NAN;
-      if (Open())
-      {
-        cLibro.stLineaLibro lineaLibro = new cLibro.stLineaLibro();
-        UInt16 bMejorJugada = 0;
-        uint sum = 0;
-
-        hash key = PolyglotKey(posicion);
-
-        m_Stream.Seek(FindFirst(key) * SIZE_OF_BOOKENTRY, SeekOrigin.Begin);
-        while (Read(ref lineaLibro) && lineaLibro.key == key)
+        //Assembly myAssembly = Assembly.GetExecutingAssembly();
+        //Stream memStream = myAssembly.GetManifestResourceStream("alfilbk.bin.gz");
+        using(Stream stream = new MemoryStream(Book.Properties.Resources.ExperimentalEnginebk_bin))
         {
-          bMejorJugada = Math.Max(bMejorJugada, lineaLibro.count);
-          sum += lineaLibro.count;
-
-          if ((sum != 0 && ((((uint)m_Rand.GetRand()) % sum) < lineaLibro.count)) || (lineaLibro.count == bMejorJugada))
-            move = (lineaLibro.move);
-        }
-
-        if (move != 0)
-        {
-          int pt = (move >> 12) & 7;
-
-          if (pt != 0)
-            move = cTypes.CreaMov(cTypes.GetFromCasilla(move), cTypes.GetToCasilla(move), cMovType.PROMOCION, (pt + 1));
-
-          for (cReglas listaMovimientos = new cReglas(posicion, cMovType.LEGAL); listaMovimientos.GetActualMov() != cMovType.MOV_NAN; ++listaMovimientos)
-            if (move == (listaMovimientos.GetActualMov() ^ cTypes.TipoMovimiento(listaMovimientos.GetActualMov())))
-            {
-              move = listaMovimientos.GetActualMov();
-              break;
-            }
+          GZipStream Gzipstream = new GZipStream(stream, CompressionMode.Decompress);
+          m_Stream=new MemoryStream();
+          CopyTo(Gzipstream, m_Stream);
         }
       }
-      return move;
+      catch (Exception )
+      {
+        return false;
+      }
+
+      return true;
     }
   }
 }

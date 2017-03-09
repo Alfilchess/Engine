@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;OBSTACLES;OBSTACLES_TEST</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;TABLESBASES;BOOK</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -48,6 +48,7 @@
     <Compile Include="Eval.cs" />
     <Compile Include="Finales.cs" />
     <Compile Include="Hash.cs" />
+    <Compile Include="Libro.cs" />
     <Compile Include="Material.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="Peones.cs" />
@@ -60,6 +61,16 @@
     <Compile Include="Thread.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Uci.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Book\Book.csproj">
+      <Project>{cf6033e9-a7aa-49b3-88fa-aaaed57a3342}</Project>
+      <Name>Book</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TableBases\TableBases.csproj">
+      <Project>{f4769bd3-985f-46ec-b8f1-6fc4922235ed}</Project>
+      <Name>TableBases</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -11,6 +11,7 @@ using color = System.Int32;
 using NodeType = System.Int32;
 using sq = System.Int32;
 using System.IO;
+using Book;
 
 namespace Motor
 {

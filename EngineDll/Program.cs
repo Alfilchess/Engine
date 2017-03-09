@@ -13,6 +13,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 using System.Diagnostics;
 
 using type = System.Int32;
+using TableBases;
 
 namespace Motor
 {
