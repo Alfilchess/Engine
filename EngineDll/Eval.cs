@@ -116,7 +116,7 @@ namespace Motor
       color colorVS = (colr == cColor.BLANCO ? cColor.NEGRO : cColor.BLANCO);
       sq Down = (colr == cColor.BLANCO ? cCasilla.SUR : cCasilla.NORTE);
 
-      evalInfo.m_Clavadas[colr] = pos.pinned_pieces(colr);
+      evalInfo.m_Clavadas[colr] = pos.PiezasClavadas(colr);
 
       bitbrd b = evalInfo.m_Ataques[colorVS][cPieza.REY] = pos.attacks_from_square_piecetype(pos.GetRey(colorVS), cPieza.REY);
       evalInfo.m_Ataques[colr][cPieza.NAN] = evalInfo.m_Ataques[colr][cPieza.PEON] = evalInfo.m_Peones.GetPeonesAtaques(colr);

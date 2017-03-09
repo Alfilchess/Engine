@@ -29,6 +29,9 @@ namespace Motor
     private int[][] m_nNumPiezas = new int[cColor.SIZE][] { new int[cPieza.SIZE], new int[cPieza.SIZE] };
     public sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] { new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] }, new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] } };
     private int[] m_nIndex = new int[cCasilla.ESCAQUES];
+#if OBSTACLES
+    private bool[] m_Obstaculos = new bool[cCasilla.ESCAQUES];
+#endif
 
     private int[] m_nMaskEnroque = new int[cCasilla.ESCAQUES];
     private sq[] m_nSqEnroqueTorre = new sq[cEnroque.ENROQUE_DERECHA];
@@ -239,7 +242,7 @@ namespace Motor
     }
 
     //---------------------------------------------------------------------------------------------------------
-    public bitbrd pinned_pieces(color c)
+    public bitbrd PiezasClavadas(color c)
     {
       return Jaques(c, c);
     }
@@ -465,6 +468,9 @@ namespace Motor
     public void CopyFrom(cPosicion pos)
     {
       Array.Copy(pos.m_Tablero, m_Tablero, cCasilla.ESCAQUES);
+#if OBSTACLES
+      Array.Copy(pos.m_Obstaculos, m_Obstaculos, cCasilla.ESCAQUES);
+#endif
       Array.Copy(pos.byTypeBB, byTypeBB, cPieza.SIZE);
       Array.Copy(pos.byColorBB, byColorBB, cColor.SIZE);
       Array.Copy(pos.m_nIndex, m_nIndex, cCasilla.ESCAQUES);
@@ -506,6 +512,9 @@ namespace Motor
       m_nPly = 0;
       m_bIsChess960 = false;
       Array.Clear(m_Tablero, 0, cCasilla.ESCAQUES);
+#if OBSTACLES
+      Array.Clear(m_Obstaculos, 0, cCasilla.ESCAQUES);
+#endif
       Array.Clear(byTypeBB, 0, cPieza.SIZE);
       Array.Clear(byColorBB, 0, cColor.SIZE);
       Array.Clear(m_nIndex, 0, cCasilla.ESCAQUES);
@@ -698,8 +707,8 @@ namespace Motor
       sq from = cTypes.GetFromCasilla(m);
       sq to = cTypes.GetToCasilla(m);
 
-#if CHESSARIA
-      if(to == cCasilla.C5)
+#if OBSTACLES
+      if(m_Obstaculos[to] == true)
         return false;
 #endif
       if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
@@ -870,11 +879,10 @@ namespace Motor
         m_PosInfo.nCasillaPeon += m_nSqPeon[us][cPieza.TORRE][rto] - m_nSqPeon[us][cPieza.TORRE][rfrom];
         k ^= cHashZobrist.m_sqPeon[us][cPieza.TORRE][rfrom] ^ cHashZobrist.m_sqPeon[us][cPieza.TORRE][rto];
       }
-      if (capture != 0)
+      if (capture != cPieza.NAN)
       {
         sq canCasillaPeon = to;
-
-
+        
         if (capture == cPieza.PEON)
         {
           if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
@@ -1112,6 +1120,20 @@ namespace Motor
       return swapList[0];
     }
 
+#if OBSTACLES
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public bool IsObstaculo(sq m)
+    {
+      return m_Obstaculos[m];
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public void SetObstaculo(sq m)
+    {
+      m_Obstaculos[m] = true;
+    }
+#endif
+
     //--------------------------------------------------------------------------------------------------------------------------------
     public bool IsTablas()
     {
@@ -1250,7 +1272,7 @@ namespace Motor
     {
       color colorVS = cTypes.Contrario(pos.ColorMueve());
       m_SqRey = pos.GetRey(colorVS);
-      m_Clavadas = pos.pinned_pieces(pos.ColorMueve());
+      m_Clavadas = pos.PiezasClavadas(pos.ColorMueve());
       m_Candidatas = pos.CandidatosJaque();
       m_Jaque[cPieza.PEON] = pos.AtaquesDePeon(m_SqRey, colorVS);
       m_Jaque[cPieza.CABALLO] = pos.attacks_from_square_piecetype(m_SqRey, cPieza.CABALLO);

@@ -96,7 +96,7 @@ namespace Motor
       } while (tte != null
           && expectedScore == cSearch.value_from_tt(tte.GetValue(), ply)
           && pos.IsPseudoLegalMov(m = tte.GetMove())
-          && pos.IsLegalMov(m, pos.pinned_pieces(pos.ColorMueve()))
+          && pos.IsLegalMov(m, pos.PiezasClavadas(pos.ColorMueve()))
           && ply < cSearch.MAX_PLY
           && (!pos.IsTablas() || ply <= 2));
       m_PV.Add(cMovType.MOV_NAN);

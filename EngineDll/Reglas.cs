@@ -337,7 +337,7 @@ namespace Motor
     public static int JugadasLegales(cPosicion pos, cMov[] mlist, int mPos)
     {
       int end, cur = mPos;
-      bitbrd pinned = pos.pinned_pieces(pos.ColorMueve());
+      bitbrd pinned = pos.PiezasClavadas(pos.ColorMueve());
       sq ksq = pos.GetRey(pos.ColorMueve());
 
       //-- Si es jaque evasiones, sino generar capturas. El final es una captura
@@ -345,18 +345,17 @@ namespace Motor
 
       while(cur != end)
       {
-#if CHESSARIA
-        if (pos.IsLegalMov(mlist[cur].m, pinned) == false)
+#if OBSTACLES
+        if(pos.IsObstaculo(end) == true)
           mlist[cur].m = mlist[--end].m;
         else
-          ++cur;
-#else
-        if((pinned != 0 || cTypes.GetFromCasilla(mlist[cur].m) == ksq || cTypes.TipoMovimiento(mlist[cur].m) == cMovType.ENPASO)
-            && !pos.IsLegalMov(mlist[cur].m, pinned))
-          mlist[cur].m = mlist[--end].m;
-        else
-          ++cur;
 #endif
+        if((pinned != 0 || cTypes.GetFromCasilla(mlist[cur].m) == ksq || cTypes.TipoMovimiento(mlist[cur].m) == cMovType.ENPASO)
+            && pos.IsLegalMov(mlist[cur].m, pinned) == false)
+          mlist[cur].m = mlist[--end].m;
+        else
+          ++cur;
+
       }
 
       return end;

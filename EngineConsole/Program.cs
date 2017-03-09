@@ -13,6 +13,7 @@ namespace EngineConsole
   {
     public static cCpu m_CPU = new cCpu();
 
+    //------------------------------------------------------------------------------
     public static void FromEngine(string str)
     {
       Debug.Write(str);
@@ -35,6 +36,9 @@ namespace EngineConsole
       cMotor.m_TablaHash.Init((ulong)cMotor.m_mapConfig["Hash"].Get());
 
       cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
+      posStart.SetObstaculo(Types.cCasilla.A5);
+      posStart.SetObstaculo(Types.cCasilla.B5);
+      posStart.SetObstaculo(Types.cCasilla.C5);
 
       cMotor.m_Consola.SetDelegateFunction(FromEngine);
 

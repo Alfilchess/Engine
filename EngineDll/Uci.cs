@@ -218,6 +218,11 @@ namespace InOut
           control.ponder = 1;
       }
 
+#if OBSTACLES_TEST
+      pos.SetObstaculo(cCasilla.A5);
+      pos.SetObstaculo(cCasilla.B5);
+      pos.SetObstaculo(cCasilla.C5);
+#endif
       cMotor.m_Threads.Analizando(pos, control, SetupStates);
     }
 
@@ -319,7 +324,8 @@ namespace InOut
     {
       cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
       //cPosicion pos = new cPosicion("8/8/3N1K2/8/1B6/4k3/8/8 w - - 1 78 ", false, cMotor.m_Threads.Principal());
-      
+
+
       string token = "", cmd = "";
 
       for (int i = 0; i < argv.Length; ++i)
