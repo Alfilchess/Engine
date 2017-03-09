@@ -11,6 +11,23 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EngineConsole", "EngineCons
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Book", "Book\Book.csproj", "{CF6033E9-A7AA-49B3-88FA-AAAED57A3342}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CE74B9ED-3CD2-410B-A935-89A6EDA3FC33}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		app.config = app.config
+		credits.html = credits.html
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Credits", "Credits", "{547B2437-B036-40A6-A817-5AAF1BB13EE5}"
+	ProjectSection(SolutionItems) = preProject
+		Credits\cr.js = Credits\cr.js
+		Credits\credits.html = Credits\credits.html
+		Credits\credits.js = Credits\credits.js
+		Credits\text_defaults.css = Credits\text_defaults.css
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,24 +89,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 5
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://esacosta.visualstudio.com/
-		SccProjectUniqueName0 = TableBases\\TableBases.csproj
-		SccProjectName0 = TableBases
-		SccLocalPath0 = TableBases
-		SccProjectUniqueName1 = EngineDll\\EngineDll.csproj
-		SccProjectName1 = EngineDll
-		SccLocalPath1 = EngineDll
-		SccProjectUniqueName2 = EngineConsole\\EngineConsole.csproj
-		SccProjectName2 = EngineConsole
-		SccLocalPath2 = EngineConsole
-		SccProjectUniqueName3 = Book\\Book.csproj
-		SccProjectName3 = Book
-		SccLocalPath3 = Book
-		SccLocalPath4 = .
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
