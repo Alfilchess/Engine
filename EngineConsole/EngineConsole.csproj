@@ -12,6 +12,10 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -56,10 +60,6 @@
     <ProjectReference Include="..\EngineDll\EngineDll.csproj">
       <Project>{5c349290-89ca-46e8-920f-0bd19fa77f9c}</Project>
       <Name>EngineDll</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Book\Book.csproj">
-      <Project>{cf6033e9-a7aa-49b3-88fa-aaaed57a3342}</Project>
-      <Name>Book</Name>
     </ProjectReference>
     <ProjectReference Include="..\TableBases\TableBases.csproj">
       <Project>{f4769bd3-985f-46ec-b8f1-6fc4922235ed}</Project>

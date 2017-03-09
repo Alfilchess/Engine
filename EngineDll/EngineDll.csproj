@@ -12,6 +12,10 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,7 +45,6 @@
     <Compile Include="Config.cs" />
     <Compile Include="Consola.cs" />
     <Compile Include="Cpu.cs" />
-    <Compile Include="EngineDll.cs" />
     <Compile Include="Eval.cs" />
     <Compile Include="Finales.cs" />
     <Compile Include="Hash.cs" />
@@ -57,9 +60,6 @@
     <Compile Include="Thread.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Uci.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

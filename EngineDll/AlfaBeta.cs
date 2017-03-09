@@ -148,6 +148,7 @@ namespace Motor
     public static cBeneficios Gains = new cBeneficios();
     public static cMovs Countermoves = new cMovs();
     public static cMovs Followupmoves = new cMovs();
+
 #if BOOK
     public static cLibro book = new cLibro();
 #endif

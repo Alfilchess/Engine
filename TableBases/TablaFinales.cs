@@ -13,6 +13,7 @@ namespace TableBases
 
   public struct ProbeResultType
   {
+ 
     public bool found;
     public MateResult stm;
     public string error;

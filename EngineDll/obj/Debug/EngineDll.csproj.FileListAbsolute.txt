@@ -1,0 +1,4 @@
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\EngineDll\bin\Debug\EngineDll.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\EngineDll\bin\Debug\EngineDll.pdb
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\EngineDll\obj\Debug\EngineDll.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\EngineDll\obj\Debug\EngineDll.pdb

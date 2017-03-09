@@ -340,14 +340,24 @@ namespace Motor
       bitbrd pinned = pos.pinned_pieces(pos.ColorMueve());
       sq ksq = pos.GetRey(pos.ColorMueve());
 
-      end=pos.Jaques()!=0 ? Evasiones(pos, mlist, mPos)
-                         : Generar(pos, mlist, mPos, cMovType.NON_EVASIONS);
-      while(cur!=end)
-        if((pinned!=0||cTypes.GetFromCasilla(mlist[cur].m)==ksq||cTypes.TipoMovimiento(mlist[cur].m)==cMovType.ENPASO)
-            &&!pos.IsLegalMov(mlist[cur].m, pinned))
-          mlist[cur].m=mlist[--end].m;
+      //-- Si es jaque evasiones, sino generar capturas. El final es una captura
+      end=pos.Jaques()!=0 ? Evasiones(pos, mlist, mPos) : Generar(pos, mlist, mPos, cMovType.NON_EVASIONS);
+
+      while(cur != end)
+      {
+#if CHESSARIA
+        if (pos.IsLegalMov(mlist[cur].m, pinned) == false)
+          mlist[cur].m = mlist[--end].m;
         else
           ++cur;
+#else
+        if((pinned != 0 || cTypes.GetFromCasilla(mlist[cur].m) == ksq || cTypes.TipoMovimiento(mlist[cur].m) == cMovType.ENPASO)
+            && !pos.IsLegalMov(mlist[cur].m, pinned))
+          mlist[cur].m = mlist[--end].m;
+        else
+          ++cur;
+#endif
+      }
 
       return end;
     }

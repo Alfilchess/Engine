@@ -38,13 +38,13 @@ namespace InOut
     }
 
     //-----------------------------------------------------------------------------------
-    public static void LogRead(string logMessage, TextWriter w)
+    public void LogRead(string logMessage, TextWriter w)
     {
       w.WriteLine("{0} {1} -> {2} ", DateTime.Now.ToLongTimeString(), DateTime.Now.ToShortDateString(), logMessage);
     }
 
     //-----------------------------------------------------------------------------------
-    public static void LogWrite(string logMessage, TextWriter w)
+    public void LogWrite(string logMessage, TextWriter w)
     {
       w.WriteLine("{0} {1} <- {2} ", DateTime.Now.ToLongTimeString(), DateTime.Now.ToShortDateString(), logMessage);
     }

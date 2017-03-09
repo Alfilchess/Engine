@@ -696,24 +696,23 @@ namespace Motor
     {
       color us = m_clrActivo;
       sq from = cTypes.GetFromCasilla(m);
+      sq to = cTypes.GetToCasilla(m);
 
-
-
+#if CHESSARIA
+      if(to == cCasilla.C5)
+        return false;
+#endif
       if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
       {
         sq ksq = GetRey(us);
-        sq to = cTypes.GetToCasilla(m);
         sq canCasillaPeon = to - cTypes.AtaquePeon(us);
         bitbrd occ = (Piezas() ^ cBitBoard.m_nCasillas[from] ^ cBitBoard.m_nCasillas[canCasillaPeon]) | cBitBoard.m_nCasillas[to];
         return 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.TORRE) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.TORRE))
             && 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.ALFIL) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.ALFIL));
       }
-
-
-
+      
       if (cTypes.TipoPieza(GetPieza(from)) == cPieza.REY)
         return cTypes.TipoMovimiento(m) == cMovType.ENROQUE || 0 == (AtaquesA(cTypes.GetToCasilla(m)) & PiezasColor(cTypes.Contrario(us)));
-
 
       return 0 == pinned
             || 0 == (pinned & cBitBoard.m_nCasillas[from])

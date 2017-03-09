@@ -1,0 +1,6 @@
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\bin\Debug\TableBases.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\bin\Debug\TableBases.pdb
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\obj\Debug\TableBases.Properties.Resources.resources
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\obj\Debug\TableBases.csproj.GenerateResource.Cache
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\obj\Debug\TableBases.dll
+C:\Users\esaco\Dropbox\Alfil\Source\Ace\Alfilchess\Ace\Engine\TableBases\obj\Debug\TableBases.pdb
