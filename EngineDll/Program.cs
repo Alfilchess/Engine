@@ -25,7 +25,7 @@ namespace Motor
     public static cThreadPool m_Threads = new cThreadPool();
     public static cTablaHash m_TablaHash = new cTablaHash();
     public static cConsola m_Consola = new cConsola(System.Console.In, System.Console.Out);
-    private static string m_strInfo = "ExperimentalEngine 17.3.1 (beta)";
+    private static string m_strInfo = "ChessEngine 17.3.9 (beta)";
     private static string m_strAutor = "id author Enrique Sanchez";
     public static cConfigFile m_ConfigFile = new cConfigFile("ExperimentalEngine.cfg");
 
