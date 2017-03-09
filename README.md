@@ -7,11 +7,11 @@ This engine includes into the executable an own book and endtables. It is theref
 ------------
 Debido a la imposibilidad de poder mantener las versiones anteriores de Alfil a un nivel aceptable y con el propósito de dar a la comunidad un nuevo motor de ajedrez con ideas nuevas y pensando siempre en la “interacción con el humano” más que en los rankings y en la velocidad. Se ha tomado la determinación de hacer un nuevo motor opensource en C#.
 
-Esta nueva versión en C# toma las ideas y el conocimiento adquirido tras más de 10 años de versiones de Alfil, comenzando de nuevo desde una base de Stockfish v5, añadiendo mejoras y comportamientos diferentes basados en programas opensource como:
+Esta nueva versión en C# toma las ideas y el conocimiento adquirido tras más de 10 años de versiones de Alfil, comenzando de nuevo desde la base de los mejores programas opensource, añadiendo mejoras y comportamientos diferentes basados en programas opensource como:
 
 Since it is not possible to keep earlier versions of Alfil to an acceptable level, and in order to give the community a new chess engine with new ideas and always thinking about the “human interaction” rather than in the rankings and in speed. It has taken the decision to make a new engine opensource in C#.
 
-This new version takes the ideas and knowledge gained from over 10 years of Alfil versions, starting again from the source of Stockfish v5, adding over time, improvements and behaviors different programs based on opensource programs as:
+This new version takes the ideas and knowledge gained from over 10 years of Alfil versions, starting again from the source of the best engines, adding over time, improvements and behaviors different programs based on opensource programs as:
 
 https://github.com/Alfilchess/Engine/tree/master/Credits
 
