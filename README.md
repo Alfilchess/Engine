@@ -3,9 +3,7 @@ Chess Engine in C# (UCI protocol and modifications for Chessaria (http://chessar
 
 # News
 . .NET Framework 3.5
-
 . UCI_LimitStrength and UCI_Elo ({0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000})
-
 . Play with holes and walls into the game. 
 
 # Components
