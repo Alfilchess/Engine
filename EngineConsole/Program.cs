@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Motor;
-using InOut;
+﻿using Motor;
 using System.Diagnostics;
 
 namespace EngineConsole
@@ -23,32 +17,58 @@ namespace EngineConsole
     static void Main(string[] args)
     {
 #if CHESSARIA
-      cMotor.m_ConfigFile.SetNivel(10);
-
-      cUci.Init(cMotor.m_mapConfig);
-
-      cBitBoard.Init();
-      cPosicion.Init();
-      cSearch.Init();
-      cBonusPeones.Init();
-      cEval.Init();
-      cMotor.m_Threads.Init();
-      cMotor.m_TablaHash.Init((ulong)cMotor.m_mapConfig["Hash"].Get());
-
-      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
-      posStart.SetObstaculo(Types.cCasilla.A5);
-      posStart.SetObstaculo(Types.cCasilla.B5);
-      posStart.SetObstaculo(Types.cCasilla.C5);
+      cMotor.Init(10);
+      
+      //cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
+      // or
+      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
       cMotor.m_Consola.SetDelegateFunction(FromEngine);
 
-      cUci.Command("uci", posStart);
-      cUci.Command("setoption name Hash value 128", posStart);
-      cUci.Command("setoption name Ponder value false", posStart);
-      cUci.Command("ucinewgame", posStart);
-      cUci.Command("isready", posStart);
-      cUci.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
-      cUci.Command("go wtime 300000 btime 300000 winc 0 binc 0", posStart);
+      cMotor.m_UCI.Command("uci", ref posStart);
+      cMotor.m_UCI.Command("setoption name Hash value 128", ref posStart);
+      cMotor.m_UCI.Command("setoption name Ponder value true", ref posStart);
+      cMotor.m_UCI.Command("setoption name Threads value 1", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("setoption name UCI_LimitStrength value true", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("setoption name UCI_Elo value 1300", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("ucinewgame", ref posStart);
+      cMotor.m_UCI.Command("isready", ref posStart);
+
+      //-- Without king by moment, put king into a hole
+      //cMotor.m_UCI.Command("position fen 1n4nk/1r1r1r2/2r1r3/8/8/2R1R3/1R1R1R2/2N1N2K b - - 0 1", posStart);
+      //posStart.SetAgujero(cCasilla.H1);
+      //posStart.SetAgujero(cCasilla.H8);
+
+      //-- FEN position
+      //cMotor.m_UCI.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
+
+      //-- History moves
+      cMotor.m_UCI.Command("position startpos moves e2e4", ref posStart);
+
+      //-- Holes (agujero) and walls(obstaculo) before thinking
+      /*posStart.SetAgujero(cCasilla.D4);
+      posStart.SetAgujero(cCasilla.D5);
+      posStart.SetAgujero(cCasilla.E4);
+      posStart.SetAgujero(cCasilla.E5);
+      posStart.SetWall(cCasilla.A5);
+      posStart.SetWall(cCasilla.B5);
+      posStart.SetWall(cCasilla.C5);
+      posStart.SetWall(cCasilla.A4);
+      posStart.SetWall(cCasilla.B4);
+      posStart.SetWall(cCasilla.C4);
+      posStart.SetWall(cCasilla.H5);
+      posStart.SetWall(cCasilla.G5);
+      posStart.SetWall(cCasilla.F5);
+      posStart.SetWall(cCasilla.F4);
+      posStart.SetWall(cCasilla.G4);
+      posStart.SetWall(cCasilla.H4);
+      */
+      //cMotor.m_UCI.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
+      cMotor.m_UCI.Command("go wtime 3000000 btime 3000000 winc 0 binc 0", ref posStart);
+
+      //-- Waiting and stop when user needs
+      System.Threading.Thread.Sleep(3000);
+      cMotor.m_UCI.Command("stop", ref posStart);
 #else
       cMotor motor = new cMotor(args);
 #endif

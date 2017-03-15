@@ -118,7 +118,7 @@ namespace Motor
 
       evalInfo.m_Clavadas[colr] = pos.PiezasClavadas(colr);
 
-      bitbrd b = evalInfo.m_Ataques[colorVS][cPieza.REY] = pos.attacks_from_square_piecetype(pos.GetRey(colorVS), cPieza.REY);
+      bitbrd b = evalInfo.m_Ataques[colorVS][cPieza.REY] = pos.AtaquesDesdeTipoDePieza(pos.GetRey(colorVS), cPieza.REY);
       evalInfo.m_Ataques[colr][cPieza.NAN] = evalInfo.m_Ataques[colr][cPieza.PEON] = evalInfo.m_Peones.GetPeonesAtaques(colr);
 
       if (pos.GetNum(colr, cPieza.DAMA) != 0 && pos.MaterialPieza(colr) > cValoresJuego.DAMA_MJ + cValoresJuego.PEON_MJ)
@@ -176,7 +176,7 @@ namespace Motor
       {
         b = Pt == cPieza.ALFIL ? cBitBoard.AtaquesPieza(s, pos.Piezas() ^ pos.PiezasColor(colr, cPieza.DAMA), cPieza.ALFIL)
           : Pt == cPieza.TORRE ? cBitBoard.AtaquesPieza(s, pos.Piezas() ^ pos.PiezasColor(colr, cPieza.TORRE, cPieza.DAMA), cPieza.TORRE)
-                            : pos.attacks_from_square_piecetype(s, Pt);
+                            : pos.AtaquesDesdeTipoDePieza(s, Pt);
 
         if ((ei.m_Clavadas[colr] & cBitBoard.m_nCasillas[s]) != 0)
           b &= cBitBoard.m_EnLinea[pos.GetRey(colr)][s];
@@ -305,8 +305,8 @@ namespace Motor
 
         safe = ~(pos.PiezasColor(colorVS) | ei.m_Ataques[colr][cPieza.NAN]);
 
-        b1 = pos.attacks_from_square_piecetype(nCasillaRey, cPieza.TORRE) & safe;
-        b2 = pos.attacks_from_square_piecetype(nCasillaRey, cPieza.ALFIL) & safe;
+        b1 = pos.AtaquesDesdeTipoDePieza(nCasillaRey, cPieza.TORRE) & safe;
+        b2 = pos.AtaquesDesdeTipoDePieza(nCasillaRey, cPieza.ALFIL) & safe;
 
 
         b = (b1 | b2) & ei.m_Ataques[colorVS][cPieza.DAMA];
@@ -321,7 +321,7 @@ namespace Motor
         if (b != 0)
           attackUnits += BishopCheck * cBitBoard.CountMax15(b);
 
-        b = pos.attacks_from_square_piecetype(nCasillaRey, cPieza.CABALLO) & ei.m_Ataques[colorVS][cPieza.CABALLO] & safe;
+        b = pos.AtaquesDesdeTipoDePieza(nCasillaRey, cPieza.CABALLO) & ei.m_Ataques[colorVS][cPieza.CABALLO] & safe;
         if (b != 0)
           attackUnits += KnightCheck * cBitBoard.CountMax15(b);
 
@@ -395,13 +395,13 @@ namespace Motor
           {
             squaresToQueen = cBitBoard.Atras(colr, casilla);
             if ((cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colorVS, cPieza.TORRE, cPieza.DAMA)) != 0
-                && (cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colorVS, cPieza.TORRE, cPieza.DAMA) & pos.attacks_from_square_piecetype(casilla, cPieza.TORRE)) != 0)
+                && (cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colorVS, cPieza.TORRE, cPieza.DAMA) & pos.AtaquesDesdeTipoDePieza(casilla, cPieza.TORRE)) != 0)
               unsafeSquares = squaresToQueen;
             else
               unsafeSquares = squaresToQueen & (ei.m_Ataques[colorVS][cPieza.NAN] | pos.PiezasColor(colorVS));
 
             if ((cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colr, cPieza.TORRE, cPieza.DAMA)) != 0
-                && (cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colr, cPieza.TORRE, cPieza.DAMA) & pos.attacks_from_square_piecetype(casilla, cPieza.TORRE)) != 0)
+                && (cBitBoard.Atras(colorVS, casilla) & pos.PiezasColor(colr, cPieza.TORRE, cPieza.DAMA) & pos.AtaquesDesdeTipoDePieza(casilla, cPieza.TORRE)) != 0)
               defendedSquares = squaresToQueen;
             else
               defendedSquares = squaresToQueen & ei.m_Ataques[colr][cPieza.NAN];

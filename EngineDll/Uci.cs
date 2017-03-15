@@ -8,6 +8,7 @@ using Motor;
 using mov = System.Int32;
 using val = System.Int32;
 using sq = System.Int32;
+using System.Diagnostics;
 
 namespace InOut
 {
@@ -80,7 +81,7 @@ namespace InOut
     }
 
     //---------------------------------------------------------------------------------
-    public static void Init(Dictionary<string, cOptConfig> config)
+    public void Init(Dictionary<string, cOptConfig> config)
     {
       config.Clear();
 
@@ -94,7 +95,9 @@ namespace InOut
       config["UCI_Chess960"] = new cOptConfig("UCI_Chess960", config.Count, false, null, true);
       config["Level"] = new cOptConfig("Level", config.Count, 10, 1, 10, cOptConfig.OnLevel, false, false);
       config["UCI_EngineAbout"] = new cOptConfig("UCI_EngineAbout", config.Count, "www.alfilchess.com", null, true);
-  
+      config["UCI_LimitStrength"] = new cOptConfig("UCI_LimitStrength", config.Count, false, null, true);
+      config["UCI_Elo"] = new cOptConfig("UCI_Elo", config.Count, 2400, 400, 2400, cOptConfig.OnElo, true, false);
+
       config["MOVILIDAD_MEDIO_JUEGO"] = new cOptConfig("MOVILIDAD_MEDIO_JUEGO", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
       config["MOVILIDAD_FINAL"] = new cOptConfig("MOVILIDAD_FINAL", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
       config["PEON_DEFENDIDO_MEDIO_JUEGO"] = new cOptConfig("PEON_DEFENDIDO_MEDIO_JUEGO", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
@@ -218,12 +221,38 @@ namespace InOut
           control.ponder = 1;
       }
 
-#if OBSTACLES_TEST
+#if CHESSARIA_TEST
+      pos.SetAgujero(cCasilla.H1);
+      pos.SetAgujero(cCasilla.H8);
+      /*pos.SetAgujero(cCasilla.D4);
+      pos.SetAgujero(cCasilla.D5);
+      pos.SetAgujero(cCasilla.E4);
+      pos.SetAgujero(cCasilla.E5);
+
       pos.SetObstaculo(cCasilla.A5);
       pos.SetObstaculo(cCasilla.B5);
       pos.SetObstaculo(cCasilla.C5);
+      pos.SetObstaculo(cCasilla.A4);
+      pos.SetObstaculo(cCasilla.B4);
+      pos.SetObstaculo(cCasilla.C4);
+      pos.SetObstaculo(cCasilla.H5);
+      pos.SetObstaculo(cCasilla.G5);
+      pos.SetObstaculo(cCasilla.F5);
+      pos.SetObstaculo(cCasilla.F4);
+      pos.SetObstaculo(cCasilla.G4);
+      pos.SetObstaculo(cCasilla.H4);*/
 #endif
-      cMotor.m_Threads.Analizando(pos, control, SetupStates);
+      try
+      {
+        cMotor.m_Threads.Analizando(pos, control, SetupStates);
+      }
+      catch(Exception ex)
+      {
+#if DEBUG
+        Debug.Print(ex.Message);
+#endif
+      }
+      
     }
 
     //---------------------------------------------------------------------------------
@@ -268,59 +297,61 @@ namespace InOut
     }
 
     //---------------------------------------------------------------------------------
-    public static void Command(string cmd, cPosicion pos)
+    public void Command(string cmd, ref cPosicion pos)
     {
-      //cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
-      //cPosicion pos = new cPosicion("8/8/3N1K2/8/1B6/4k3/8/8 w - - 1 78 ", false, cMotor.m_Threads.Principal());
+      string token = "";
 
-      string token = ""/*, cmd = ""*/;
-      
-      do
+      try
       {
-        //if(argv.Length == 0 && String.IsNullOrEmpty(cmd = cMotor.m_Consola.ReadLine(AccionConsola.NADA)))
-        //  cmd = "quit";
-
-        Stack<string> stack = CreateStack(cmd);
-        token = stack.Pop();
-
-        if(token == "quit" || token == "stop" || token == "ponderhit")
+        do
         {
-          if(token != "ponderhit" || cSearch.Signals.STOP_ON_PONDER)
+          Stack<string> stack = CreateStack(cmd);
+          token = stack.Pop();
+
+          if(token == "quit" || token == "stop" || token == "ponderhit")
           {
-            cSearch.Signals.STOP = true;
-            cMotor.m_Threads.Principal().Signal();
+            if(token != "ponderhit" || cSearch.Signals.STOP_ON_PONDER)
+            {
+              cSearch.Signals.STOP = true;
+              cMotor.m_Threads.Principal().Signal();
+            }
+            else
+              cSearch.Limits.ponder = 0;
           }
+          else if(token == "uci")
+          {
+            cMotor.m_Consola.PrintLine("id name " + cMotor.Info(), AccionConsola.GET);
+            cMotor.m_Consola.PrintLine(ShowOption(cMotor.m_mapConfig), AccionConsola.NADA);
+            cMotor.m_Consola.PrintLine("uciok", AccionConsola.RELEASE);
+          }
+          else if(token == "go")
+            GoUCI(pos, stack);
+          else if(token == "position")
+            SetPosicion(pos, stack);
+          else if(token == "setoption")
+            SetOption(stack);
+          else if(token == "test")
+            cMotor.Test();
+          else if(token == "isready")
+            cMotor.m_Consola.PrintLine("readyok", AccionConsola.ATOMIC);
+          else if(token == "ucinewgame")
+            cMotor.m_TablaHash.Clear();
           else
-            cSearch.Limits.ponder = 0;
-        }
-        else if(token == "uci")
-        {
-          cMotor.m_Consola.PrintLine("id name " + cMotor.Info(), AccionConsola.GET);
-          cMotor.m_Consola.PrintLine(ShowOption(cMotor.m_mapConfig), AccionConsola.NADA);
-          cMotor.m_Consola.PrintLine("uciok", AccionConsola.RELEASE);
-        }
-        else if(token == "go")
-          GoUCI(pos, stack);
-        else if(token == "position")
-          SetPosicion(pos, stack);
-        else if(token == "setoption")
-          SetOption(stack);
-        else if(token == "test")
-          cMotor.Test();
-        else if(token == "isready")
-          cMotor.m_Consola.PrintLine("readyok", AccionConsola.ATOMIC);
-        else if(token == "ucinewgame")
-          cMotor.m_TablaHash.Clear();
-        else
-          cMotor.m_Consola.PrintLine("Comando desconocido: " + cmd, AccionConsola.ATOMIC);
+            cMotor.m_Consola.PrintLine("Comando desconocido: " + cmd, AccionConsola.ATOMIC);
 
-      } while(token != "quit" && cmd.Length == 0);
-
-      //cMotor.m_Threads.WaitAnalizando();
+        } while(token != "quit" && cmd.Length == 0);
+      
+      }
+      catch(Exception ex)
+      {
+#if DEBUG
+        Debug.Write(ex.Message);
+#endif
+      }
     }
 
     //---------------------------------------------------------------------------------
-    public static void Recibir(String[] argv)
+    public void Recibir(String[] argv)
     {
       cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
       //cPosicion pos = new cPosicion("8/8/3N1K2/8/1B6/4k3/8/8 w - - 1 78 ", false, cMotor.m_Threads.Principal());

@@ -84,37 +84,47 @@ namespace Motor
       if(Chess960&&(cBitBoard.AtaquesPieza(kto, pos.Piezas()^cBitBoard.m_nCasillas[rfrom], cPieza.TORRE)&pos.PiezasColor(cTypes.Contrario(us), cPieza.TORRE, cPieza.DAMA))!=0)
         return mPos;
 
-      mov m = cTypes.CreaMov(kfrom, rfrom, cMovType.ENROQUE, cPieza.CABALLO);
+#if CHESSARIA
+      if(pos.IsObstaculo(rfrom) == false)
+#endif
+      {
+        mov m = cTypes.CreaMov(kfrom, rfrom, cMovType.ENROQUE, cPieza.CABALLO);
 
-      if(Checks&&!pos.IsJaque(m, ci))
-        return mPos;
+        if(Checks && !pos.IsJaque(m, ci))
+          return mPos;
 
-      mlist[mPos++].m=m;
+        mlist[mPos++].m = m;
+      }
 
       return mPos;
     }
 
     //----------------------------------------------------------------------------------------
-    public static int Promocion(cMov[] mlist, int mPos, bitbrd pawnsOn7, bitbrd target, cInfoJaque ci, type Type, sq Delta)
+    public static int Promocion(cPosicion pos, cMov[] mlist, int mPos, bitbrd pawnsOn7, bitbrd target, cInfoJaque ci, type Type, sq Delta)
     {
       bitbrd b = cBitBoard.Desplazamiento(pawnsOn7, Delta)&target;
 
       while(b!=0)
       {
         sq to = cBitBoard.GetLSB(ref b);
-
-        if(Type==cMovType.CAPTURES||Type==cMovType.EVASIONS||Type==cMovType.NON_EVASIONS)
-          mlist[mPos++].m=cTypes.CreaMov(to-Delta, to, cMovType.PROMOCION, cPieza.DAMA);
-
-        if(Type==cMovType.QUIETS||Type==cMovType.EVASIONS||Type==cMovType.NON_EVASIONS)
+#if CHESSARIA
+        if(pos.IsObstaculo(to) == false)
+#endif
         {
-          mlist[mPos++].m=cTypes.CreaMov(to-Delta, to, cMovType.PROMOCION, cPieza.TORRE);
-          mlist[mPos++].m=cTypes.CreaMov(to-Delta, to, cMovType.PROMOCION, cPieza.ALFIL);
-          mlist[mPos++].m=cTypes.CreaMov(to-Delta, to, cMovType.PROMOCION, cPieza.CABALLO);
-        }
 
-        if(Type==cMovType.QUIET_CHECKS&&(cBitBoard.m_Ataques[cPieza.CABALLO_BLANCO][to]&cBitBoard.m_nCasillas[ci.m_SqRey])!=0)
-          mlist[mPos++].m=cTypes.CreaMov(to-Delta, to, cMovType.PROMOCION, cPieza.CABALLO);
+          if(Type == cMovType.CAPTURES || Type == cMovType.EVASIONS || Type == cMovType.NON_EVASIONS)
+            mlist[mPos++].m = cTypes.CreaMov(to - Delta, to, cMovType.PROMOCION, cPieza.DAMA);
+
+          if(Type == cMovType.QUIETS || Type == cMovType.EVASIONS || Type == cMovType.NON_EVASIONS)
+          {
+            mlist[mPos++].m = cTypes.CreaMov(to - Delta, to, cMovType.PROMOCION, cPieza.TORRE);
+            mlist[mPos++].m = cTypes.CreaMov(to - Delta, to, cMovType.PROMOCION, cPieza.ALFIL);
+            mlist[mPos++].m = cTypes.CreaMov(to - Delta, to, cMovType.PROMOCION, cPieza.CABALLO);
+          }
+
+          if(Type == cMovType.QUIET_CHECKS && (cBitBoard.m_Ataques[cPieza.CABALLO_BLANCO][to] & cBitBoard.m_nCasillas[ci.m_SqRey]) != 0)
+            mlist[mPos++].m = cTypes.CreaMov(to - Delta, to, cMovType.PROMOCION, cPieza.CABALLO);
+        }
       }
 
       return mPos;
@@ -170,13 +180,19 @@ namespace Motor
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          mlist[mPos++].m=cTypes.CreaMov(to-Up, to);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m=cTypes.CreaMov(to-Up, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          mlist[mPos++].m=cTypes.CreaMov(to-Up-Up, to);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m=cTypes.CreaMov(to-Up-Up, to);
         }
       }
 
@@ -188,9 +204,9 @@ namespace Motor
         if(Type==cMovType.EVASIONS)
           emptySquares&=target;
 
-        mPos=Promocion(mlist, mPos, pawnsOn7, enemies, ci, Type, Right);
-        mPos=Promocion(mlist, mPos, pawnsOn7, enemies, ci, Type, Left);
-        mPos=Promocion(mlist, mPos, pawnsOn7, emptySquares, ci, Type, Up);
+        mPos=Promocion(pos, mlist, mPos, pawnsOn7, enemies, ci, Type, Right);
+        mPos=Promocion(pos, mlist, mPos, pawnsOn7, enemies, ci, Type, Left);
+        mPos=Promocion(pos, mlist, mPos, pawnsOn7, emptySquares, ci, Type, Up);
       }
 
       if(Type==cMovType.CAPTURES||Type==cMovType.EVASIONS||Type==cMovType.NON_EVASIONS)
@@ -201,13 +217,19 @@ namespace Motor
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          mlist[mPos++].m=cTypes.CreaMov(to-Right, to);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m=cTypes.CreaMov(to-Right, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          mlist[mPos++].m=cTypes.CreaMov(to-Left, to);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m=cTypes.CreaMov(to-Left, to);
         }
 
         if(pos.CasillaEnPaso()!=cCasilla.NONE)
@@ -217,8 +239,13 @@ namespace Motor
 
           b1=pawnsNotOn7&pos.AtaquesDePeon(pos.CasillaEnPaso(), colorVS);
 
-          while(b1!=0)
-            mlist[mPos++].m=cTypes.CreaMov(cBitBoard.GetLSB(ref b1), pos.CasillaEnPaso(), cMovType.ENPASO, cPieza.CABALLO);
+          while(b1 != 0)
+          {
+#if CHESSARIA
+            if(pos.IsObstaculo(pos.CasillaEnPaso()) == false)
+#endif
+              mlist[mPos++].m = cTypes.CreaMov(cBitBoard.GetLSB(ref b1), pos.CasillaEnPaso(), cMovType.ENPASO, cPieza.CABALLO);
+          }
         }
       }
 
@@ -242,14 +269,24 @@ namespace Motor
           if(ci.m_Candidatas!=0&&(ci.m_Candidatas&cBitBoard.m_nCasillas[from])!=0)
             continue;
         }
+#if CHESSARIA
+        if(pos.IsObstaculo(from) == true)
+          continue;
+#endif
 
-        bitbrd b = pos.attacks_from_square_piecetype(from, Pt)&target;
+        bitbrd b = pos.AtaquesDesdeTipoDePieza(from, Pt)&target;
 
         if(Checks)
           b&=ci.m_Jaque[Pt];
 
-        while(b!=0)
-          mlist[mPos++].m=cTypes.CreaMov(from, cBitBoard.GetLSB(ref b));
+        while(b != 0)
+        {
+          type to = cBitBoard.GetLSB(ref b);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m = cTypes.CreaMov(from, to);
+        }
       }
 
       return mPos;
@@ -269,9 +306,15 @@ namespace Motor
       if(Type!=cMovType.QUIET_CHECKS&&Type!=cMovType.EVASIONS)
       {
         sq ksq = pos.GetRey(us);
-        bitbrd b = pos.attacks_from_square_piecetype(ksq, cPieza.REY)&target;
-        while(b!=0)
-          mlist[mPos++].m=cTypes.CreaMov(ksq, cBitBoard.GetLSB(ref b));
+        bitbrd b = pos.AtaquesDesdeTipoDePieza(ksq, cPieza.REY)&target;
+        while(b != 0)
+        {
+          type to = cBitBoard.GetLSB(ref b);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m = cTypes.CreaMov(ksq, to);
+        }
       }
 
       if(Type!=cMovType.CAPTURES&&Type!=cMovType.EVASIONS&&pos.CanEnroque(us)!=0)
@@ -319,9 +362,15 @@ namespace Motor
         sliderAttacks|=cBitBoard.m_EnLinea[checksq][ksq]^cBitBoard.m_nCasillas[checksq];
       }
 
-      bitbrd b = pos.attacks_from_square_piecetype(ksq, cPieza.REY)&~pos.PiezasColor(us)&~sliderAttacks;
-      while(b!=0)
-        mlist[mPos++].m=cTypes.CreaMov(ksq, cBitBoard.GetLSB(ref b));
+      bitbrd b = pos.AtaquesDesdeTipoDePieza(ksq, cPieza.REY)&~pos.PiezasColor(us)&~sliderAttacks;
+      while(b != 0)
+      {
+        type to = cBitBoard.GetLSB(ref b);
+#if CHESSARIA
+        if(pos.IsObstaculo(to) == false)
+#endif
+          mlist[mPos++].m = cTypes.CreaMov(ksq, to);
+      }
 
       if(cBitBoard.MayorQue(pos.Jaques()))
         return mPos;
@@ -345,8 +394,8 @@ namespace Motor
 
       while(cur != end)
       {
-#if OBSTACLES
-        if(pos.IsObstaculo(end) == true)
+#if CHESSARIA
+        if(pos.IsObstaculo(end) == true || pos.IsObstaculo(cur))
           mlist[cur].m = mlist[--end].m;
         else
 #endif
@@ -382,8 +431,14 @@ namespace Motor
         if(pt==cPieza.REY)
           b&=~cBitBoard.m_PseudoAtaques[cPieza.DAMA][ci.m_SqRey];
 
-        while(b!=0)
-          mlist[mPos++].m=cTypes.CreaMov(from, cBitBoard.GetLSB(ref b));
+        while(b != 0)
+        {
+          type to = cBitBoard.GetLSB(ref b);
+#if CHESSARIA
+          if(pos.IsObstaculo(to) == false)
+#endif
+            mlist[mPos++].m = cTypes.CreaMov(from, to);
+        }
       }
 
       return us==cColor.BLANCO ? ToDO(pos, mlist, mPos, ~pos.Piezas(), cColor.BLANCO, cMovType.QUIET_CHECKS, ci) :

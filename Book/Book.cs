@@ -9,6 +9,7 @@ using bitbrd = System.UInt64;
 using mov = System.Int32;
 using sq = System.Int32;
 using pieza = System.Int32;
+using System.Diagnostics;
 
 namespace Book
 {
@@ -317,8 +318,11 @@ namespace Book
           CopyTo(Gzipstream, m_Stream);
         }
       }
-      catch (Exception )
+      catch (Exception ex)
       {
+#if DEBUG
+        Debug.Write(ex.Message);
+#endif
         return false;
       }
 

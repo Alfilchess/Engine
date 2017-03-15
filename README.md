@@ -1,13 +1,20 @@
 # Engine
-Chess Engine in C# (UCI protocol and modifications for Chessaria)
+Chess Engine in C# (UCI protocol and modifications for Chessaria (http://chessaria.com/))
+
+# News
+. .NET Framework 3.5
+
+. UCI_LimitStrength and UCI_Elo ({0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000})
+
+. Play with holes and walls into the game. 
 
 # Components
 
 Book - Polyglot format
 
-EngineConsole - UCI protocol and testing Chessaria (posible defines: CHESSARIA)
+EngineConsole - UCI protocol and testing Chessaria (possible defines: CHESSARIA) - Default: 
 
-EngineDLL - Core of the engine (posible defines: TABLEBASES, BOOK, CHESSARIA, OBSTACLES, OBSTACLES_TEST)
+EngineDLL - Core of the engine (possible defines: TABLEBASES, BOOK, CHESSARIA) - Default: TABLEBASE;BOOK
 
 Tablebases - Some Tablebases included int gtb format (kbk, kbkb, kbkn, kbnk, knkn, kpk, kpkp, kqk, kqkr, krk, krkb)
 
@@ -28,6 +35,6 @@ https://github.com/Alfilchess/Engine/tree/master/Credits
 
 Este es un nuevo proyecto en C# pretende servir como herramienta de trabajo (en castellano) para futuros motores y herramientas de ajedrez.
 
-(This is a new project in C # mainly from stockfish but intended to serve as a working tool (in Spanish) for future chess engines and tools.)
+(This is a new project in C# mainly from stockfish but intended to serve as a working tool (in Spanish) for future chess engines and tools.)
 
 Everyone is invited to collaborate.

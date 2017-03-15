@@ -18,9 +18,11 @@ namespace InOut
   public class cConsola
   {
     private System.Threading.Mutex m_Mutex;
-
+#if CHESSARIA
+#else
     private TextReader m_In;
     private TextWriter m_Out;
+#endif
     private Action<string> m_CallBackFunction = null;
 
     public void SetDelegateFunction(Action<string> callBackFunction)
@@ -32,8 +34,11 @@ namespace InOut
     public cConsola(TextReader inputReader, TextWriter outputWriter)
     {
       m_Mutex = new System.Threading.Mutex();
+#if CHESSARIA
+#else
       m_In = inputReader;
       m_Out = outputWriter;
+#endif
       m_CallBackFunction = null;
     }
 
@@ -52,21 +57,22 @@ namespace InOut
     //-----------------------------------------------------------------------------------
     public string ReadLine(AccionConsola accion)
     {
-      string cad;
+      string cad = "";
       if (accion == AccionConsola.GET || accion == AccionConsola.ATOMIC)
         m_Mutex.WaitOne();
-
+#if CHESSARIA
+#else
       cad = m_In.ReadLine();
-
-      if (cMotor.m_mapConfig["Log"].Get() != 0)
+      
+      if(cMotor.m_mapConfig["Log"].Get() != 0)
       {
         using (StreamWriter w = File.AppendText("log.txt"))
         {
           LogRead(cad, w);
         }
       }
-
-      if (accion == AccionConsola.RELEASE || accion == AccionConsola.ATOMIC)
+#endif
+      if(accion == AccionConsola.RELEASE || accion == AccionConsola.ATOMIC)
         m_Mutex.ReleaseMutex();
 
       return cad;
@@ -78,12 +84,13 @@ namespace InOut
       if (accion == AccionConsola.GET || accion == AccionConsola.ATOMIC)
         m_Mutex.WaitOne();
 
+#if CHESSARIA
       if(m_CallBackFunction != null)
         m_CallBackFunction(cad);
-      else
-        m_Out.Write(cad);
-
-      foreach (var line in cad.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+#else
+      m_Out.Write(cad);
+#endif
+      foreach(var line in cad.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
       {
         if (cMotor.m_mapConfig["Log"].Get() != 0)
         {

@@ -205,7 +205,7 @@ namespace Types
     //---------------------------------------------------------------------------------------
     public static mov CreaMov(pos from, pos to)
     {
-      return (to | (from << 6));
+        return (to | (from << 6));
     }
 
     //---------------------------------------------------------------------------------------
@@ -325,7 +325,7 @@ namespace Types
   //---------------------------------------------------------------------------------------
   public class cPieza
   {
-    public const pieza NAN = 0, PEON = 1, CABALLO = 2, ALFIL = 3, TORRE = 4, DAMA = 5, REY = 6, OBSTACLES = 7;
+    public const pieza NAN = 0, PEON = 1, CABALLO = 2, ALFIL = 3, TORRE = 4, DAMA = 5, REY = 6, OBSTACLE = 7;
     public const pieza SIZE = 8;
     public const pieza PEON_BLANCO = 1, CABALLO_BLANCO = 2, ALFIL_BLANCO = 3, TORRE_BLANCO = 4, DAMA_BLANCO = 5, REY_BLANCO = 6;
     public const pieza PEON_NEGRO = 9, CABALLO_NEGRO = 10, ALFIL_NEGRO = 11, TORRE_NEGRO = 12, DAMA_NEGRO = 13, REY_NEGRO = 14;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using TableBases.Properties;
+using System.Diagnostics;
 
 namespace TableBases
 {
@@ -2140,11 +2141,13 @@ namespace TableBases
           probeResult.found = false;
         }
       }
-      catch(Exception /*ex*/)
+      catch(Exception ex)
       {
-
+#if DEBUG
+        Debug.Write(ex.Message);
+#endif
       }
-      
+
 
       return probeResult;
     }

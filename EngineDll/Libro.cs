@@ -85,15 +85,23 @@ namespace Book
         {
           int pt = (move >> 12) & 7;
 
-          if (pt != 0)
-            move = cTypes.CreaMov(cTypes.GetFromCasilla(move), cTypes.GetToCasilla(move), cMovType.PROMOCION, (pt + 1));
-
-          for (cReglas listaMovimientos = new cReglas(posicion, cMovType.LEGAL); listaMovimientos.GetActualMov() != cMovType.MOV_NAN; ++listaMovimientos)
-            if (move == (listaMovimientos.GetActualMov() ^ cTypes.TipoMovimiento(listaMovimientos.GetActualMov())))
+          if(pt != 0)
+          {
+#if CHESSARIA
+            if(posicion.IsObstaculo(cTypes.GetToCasilla(move)) == false)
+#endif
             {
-              move = listaMovimientos.GetActualMov();
-              break;
+
+              move = cTypes.CreaMov(cTypes.GetFromCasilla(move), cTypes.GetToCasilla(move), cMovType.PROMOCION, (pt + 1));
+
+              for(cReglas listaMovimientos = new cReglas(posicion, cMovType.LEGAL); listaMovimientos.GetActualMov() != cMovType.MOV_NAN; ++listaMovimientos)
+                if(move == (listaMovimientos.GetActualMov() ^ cTypes.TipoMovimiento(listaMovimientos.GetActualMov())))
+                {
+                  move = listaMovimientos.GetActualMov();
+                  break;
+                }
             }
+          }
         }
       }
       return move;

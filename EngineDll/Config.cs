@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using Types;
 using Motor;
+using System.Diagnostics;
 
 namespace InOut
 {
@@ -63,8 +64,25 @@ namespace InOut
     public static void OnLevel(cOptConfig o)
     {
       cMotor.m_ConfigFile.SetNivel((int)o.Get());
-      cUci.Init(cMotor.m_mapConfig);
+      //cMotor.m_UCI.Init(cMotor.m_mapConfig);
     }
+
+    public static readonly int[] ELO_SCORES = {0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000};
+    public static void OnElo(cOptConfig o)
+    {
+      int nNivel = 1;
+      foreach(int n in ELO_SCORES)
+      {
+        if(nNivel + 1 < ELO_SCORES.Length)
+          if((int)o.Get() >= ELO_SCORES[nNivel] && (int)o.Get() < ELO_SCORES[nNivel + 1])
+            break;
+
+        nNivel++;
+      }
+
+      cMotor.m_ConfigFile.SetNivel(nNivel);
+    }
+
 
     public static void OnCPU(cOptConfig o)
     {
@@ -178,7 +196,7 @@ namespace InOut
     private Dictionary<string, Dictionary<string, string>> m_Modified = new Dictionary<string, Dictionary<string, string>>();
 
     private const string STR_NIVEL = "NIVEL ";
-    private int m_nNivelJuego = 10;
+    public  int m_nNivelJuego = 10;
 
 
     //------------------------------------------------------------------------------------------------------
@@ -251,8 +269,11 @@ namespace InOut
           {
             sr = new StreamReader(m_FileName);
           }
-          catch (FileNotFoundException)
+          catch (FileNotFoundException ex)
           {
+#if DEBUG
+            Debug.Write(ex.Message);
+#endif
             return;
           }
 
@@ -413,8 +434,11 @@ namespace InOut
       {
         return DecodeByteArray(StringValue);
       }
-      catch (FormatException)
+      catch (FormatException ex)
       {
+#if DEBUG
+        Debug.Write(ex.Message);
+#endif
         return DefaultValue;
       }
     }

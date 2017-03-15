@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EngineDll</RootNamespace>
     <AssemblyName>EngineDll</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <SccProjectName>SAK</SccProjectName>
@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;TABLESBASES;BOOK</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;TABLEBASES;BOOK</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -50,6 +50,7 @@
     <Compile Include="Hash.cs" />
     <Compile Include="Libro.cs" />
     <Compile Include="Material.cs" />
+    <Compile Include="Motor.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="Peones.cs" />
     <Compile Include="Pos.cs" />

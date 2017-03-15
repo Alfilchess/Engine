@@ -12,6 +12,7 @@ using colum = System.Int32;
 using fila = System.Int32;
 using factor = System.Int32;
 using TableBases;
+using System.Diagnostics;
 
 //-- Sustituir por tabla de finales nalimov en cuanto haya tiempo
 namespace Motor
@@ -63,7 +64,7 @@ namespace Motor
             70, 50, 30, 20, 20, 30, 50,  70,
             80, 60, 40, 30, 30, 40, 60,  80,
             90, 70, 60, 50, 50, 60, 70,  90,
-            100, 90, 80, 70, 70, 80, 90, 100,};
+            100, 90, 80, 70, 70, 80, 90, 100};
 
     public static int[] m_lstValorEsquinas = new int[cCasilla.ESCAQUES] {
             200, 190, 180, 170, 160, 150, 140, 130,
@@ -513,7 +514,7 @@ namespace Motor
       && cTypes.FilaProxima(m_cDebil, pos.GetRey(m_cFuerte)) >= FILA.F4
       && cTypes.FilaProxima(m_cDebil, nCasillaTorre) == FILA.F3
       && (pos.PiezasColor(m_cDebil, cPieza.PEON)
-          & pos.attacks_from_square_piecetype(kingSq, cPieza.REY)
+          & pos.AtaquesDesdeTipoDePieza(kingSq, cPieza.REY)
           & pos.AtaquesDePeon(nCasillaTorre, m_cFuerte)) != 0)
         return cFactorEscala.TABLAS;
 
@@ -687,7 +688,7 @@ namespace Motor
           if ((path & pos.PiezasColor(m_cDebil, cPieza.REY)) != 0)
             return cFactorEscala.TABLAS;
 
-          if (((pos.attacks_from_square_piecetype(weakerBishonCasillaPeon, cPieza.ALFIL) & path) != 0)
+          if (((pos.AtaquesDesdeTipoDePieza(weakerBishonCasillaPeon, cPieza.ALFIL) & path) != 0)
               && cBitBoard.Distancia(weakerBishonCasillaPeon, sqPeon) >= 3)
             return cFactorEscala.TABLAS;
         }
@@ -737,14 +738,14 @@ namespace Motor
           if (ksq == blockSq1
               && cTypes.IsColorContrario(ksq, wbsq)
               && (bbsq == blockSq2
-                  || (pos.attacks_from_square_piecetype(blockSq2, cPieza.ALFIL) & pos.PiezasColor(m_cDebil, cPieza.ALFIL)) != 0
+                  || (pos.AtaquesDesdeTipoDePieza(blockSq2, cPieza.ALFIL) & pos.PiezasColor(m_cDebil, cPieza.ALFIL)) != 0
                   || Math.Abs(r1 - r2) >= 2))
             return cFactorEscala.TABLAS;
 
           else if (ksq == blockSq2
               && cTypes.IsColorContrario(ksq, wbsq)
               && (bbsq == blockSq1
-                  || (pos.attacks_from_square_piecetype(blockSq1, cPieza.ALFIL) & pos.PiezasColor(m_cDebil, cPieza.ALFIL)) != 0))
+                  || (pos.AtaquesDesdeTipoDePieza(blockSq1, cPieza.ALFIL) & pos.PiezasColor(m_cDebil, cPieza.ALFIL)) != 0))
             return cFactorEscala.TABLAS;
           else
             return cFactorEscala.NAN;
@@ -788,7 +789,7 @@ namespace Motor
       sq alfilCasillaPeon = pos.GetList(m_cDebil, cPieza.ALFIL)[0];
       sq weakerKingSq = pos.GetRey(m_cDebil);
 
-      if ((cBitBoard.Atras(m_cFuerte, sqPeon) & pos.attacks_from_square_piecetype(alfilCasillaPeon, cPieza.ALFIL)) != 0)
+      if ((cBitBoard.Atras(m_cFuerte, sqPeon) & pos.AtaquesDesdeTipoDePieza(alfilCasillaPeon, cPieza.ALFIL)) != 0)
         return cBitBoard.Distancia(weakerKingSq, sqPeon);
 
       return cFactorEscala.NAN;
@@ -824,7 +825,7 @@ namespace Motor
 #endif
     }
 
-    #if TABLEBASES
+#if TABLEBASES
     //-----------------------------------------------------------------------------------------------
     public static bool SetConjuntoPiezasPosicion(cPosicion pos)
     {
@@ -850,8 +851,11 @@ namespace Motor
           }
         }
       }
-      catch(Exception /*ex*/)
+      catch(Exception ex)
       {
+    #if DEBUG
+        Debug.Write(ex.Message);
+    #endif
 
       }
       enPassantSquare = pos.CasillaEnPaso();

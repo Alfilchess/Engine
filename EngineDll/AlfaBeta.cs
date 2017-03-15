@@ -12,6 +12,7 @@ using NodeType = System.Int32;
 using sq = System.Int32;
 using System.IO;
 using Book;
+using System.Diagnostics;
 
 namespace Motor
 {
@@ -124,6 +125,7 @@ namespace Motor
         pos.DesMov(m_PV[--idx]);
     }
   }
+
 
   public class cSearch
   {
@@ -272,7 +274,46 @@ namespace Motor
       cMotor.m_Consola.Print(cTypes.LF, AccionConsola.RELEASE);
     }
 
+    //-- When playing with a strength handicap, choose best move among the MultiPV
+    //-- Set using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
+    public static mov GetLevelMove(int nLevel)
 
+    {
+      mov best = cMovType.MOV_NAN;
+
+      // PRNG sequence should be not deterministic
+      //for(int i = (int)cReloj.Now() % 50; i > 0; --i)
+      //  cAleatorio().GetRand();
+
+      // RootMoves are already sorted by score in descending order
+      int variance = Math.Min(cSearch.RootMoves[0].m_nVal - cSearch.RootMoves[cSearch.MultiPV - 1].m_nVal, cValoresJuego.PEON_MJ);
+      int weakness = 120 - (2 * nLevel); 
+      int max_s = -cValoresJuego.INFINITO;
+      best = cMovType.MOV_NAN;
+
+      // Choose best move. For each move score we add two terms both dependent on
+      // weakness. One deterministic and bigger for weaker moves, and one random,
+      // then we choose the move with the resulting highest score.
+      for(int i = 0; i < cSearch.MultiPV; ++i)
+      {
+        int s = cSearch.RootMoves[i].m_nVal;
+        // Don't allow crazy blunders even at very low skills
+        if(i > 0 && cSearch.RootMoves[i - 1].m_nVal > s + 2 + cValoresJuego.PEON_MJ)
+          break;
+
+        // This is our magic formula
+        cAleatorio rk = new cAleatorio(4474);
+        s += (weakness * (cSearch.RootMoves[0].m_nVal - s) + variance * (int)(rk.GetRand() % (UInt64)weakness)) / 128;
+
+        if(s > max_s)
+        {
+          max_s = s;
+          best = cSearch.RootMoves[i].m_PV[0];
+        }
+      }
+
+      return best;
+    }
 
     public static void id_loop(cPosicion pos)
     {
@@ -294,6 +335,10 @@ namespace Motor
       Followupmoves.Clear();
       MultiPV = cMotor.m_mapConfig["MultiPV"].Get();
       MultiPV = Math.Min(MultiPV, RootMoves.Count);
+
+
+      if(cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0 && MultiPV < 4)
+        MultiPV = 4;
 
       while (++depth <= cSearch.MAX_PLY && !Signals.STOP && (0 == Limits.depth || depth <= Limits.depth))
       {
@@ -329,8 +374,11 @@ namespace Motor
               RootMoves[i].insert_pv_in_tt(pos);
 
             }
-            catch(Exception /*ex*/)
+            catch(Exception ex)
             {
+#if DEBUG
+              Debug.Write(ex.Message);
+#endif
               Signals.FAILED = true;
               break;
             }
@@ -364,6 +412,9 @@ namespace Motor
             cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
         }
 
+        if(cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0)
+          GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego);
+
         if (Limits.mate != 0
             && bestValue >= cValoresJuego.MATE_MAXIMO
             && cValoresJuego.MATE - bestValue <= 2 * Limits.mate)
@@ -378,13 +429,23 @@ namespace Motor
 
           if (RootMoves.Count == 1 || cReloj.Now() - SearchTime > TimeMgr.Disponible())
           {
-
-
             if (Limits.ponder != 0)
               Signals.STOP_ON_PONDER = true;
             else
               Signals.STOP = true;
           }
+        }
+      }
+
+      //-- Get level move
+      if(cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0)
+      {
+        int bestpos = Buscar(cSearch.RootMoves, 0, cSearch.RootMoves.Count, bestValue != 0 ? bestValue : GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego));
+        if(bestpos >= 0)
+        {
+          cRaizMov temp = cSearch.RootMoves[0];
+          cSearch.RootMoves[0] = cSearch.RootMoves[bestpos];
+          cSearch.RootMoves[bestpos] = temp;
         }
       }
     }
