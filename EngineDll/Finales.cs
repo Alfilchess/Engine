@@ -123,7 +123,7 @@ namespace Motor
       string fen = sides[0] + (char)(8 - sides[0].Length + '0') + "/8/8/8/8/8/8/"
                  + sides[1] + (char)(8 - sides[1].Length + '0') + " w - - 0 10";
 
-      return new cPosicion(fen, false, null).ClaveMaterial();
+      return new cPosicion(fen, false, null).ClaveHashMaterial();
     }
   }
 

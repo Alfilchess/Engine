@@ -146,7 +146,7 @@ namespace Motor
     //----------------------------------------------------------------------------------
     public static cMaterial.cStructMaterial Buscar(cPosicion pos, cMaterial.cTablaHashMaterial entradaMaterial, cFinales finales)
     {
-      hash clave = pos.ClaveMaterial();
+      hash clave = pos.ClaveHashMaterial();
       cMaterial.cStructMaterial e = entradaMaterial[clave];
 
 

@@ -30,9 +30,8 @@ namespace Motor
     private int[][] m_nNumPiezas = new int[cColor.SIZE][] { new int[cPieza.SIZE], new int[cPieza.SIZE] };
     public sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] { new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] }, new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] } };
     private int[] m_nIndex = new int[cCasilla.ESCAQUES];
-#if CHESSARIA
+
     private bool[] m_Obstaculos = new bool[cCasilla.ESCAQUES];
-#endif
 
     private int[] m_nMaskEnroque = new int[cCasilla.ESCAQUES];
     private sq[] m_nSqEnroqueTorre = new sq[cEnroque.ENROQUE_DERECHA];
@@ -271,7 +270,7 @@ namespace Motor
       return m_PosInfo.pawnKey;
     }
 
-    public hash ClaveMaterial()
+    public hash ClaveHashMaterial()
     {
       return m_PosInfo.materialKey;
     }
@@ -389,17 +388,17 @@ namespace Motor
     public type GetTipoAtaqueMinimo(bitbrd[] bb, sq to, bitbrd stmAttackers, ref bitbrd occupied, ref bitbrd attackers, int Pt)
     {
       bitbrd b = stmAttackers & bb[Pt];
-      if (0 == b)
+      if(0 == b)
       {
-        if ((Pt + 1) == cPieza.REY)
+        if((Pt + 1) == cPieza.REY)
           return cPieza.REY;
         else
           return GetTipoAtaqueMinimo(bb, to, stmAttackers, ref occupied, ref attackers, Pt + 1);
       }
       occupied ^= b & ~(b - 1);
-      if (Pt == cPieza.PEON || Pt == cPieza.ALFIL || Pt == cPieza.DAMA)
+      if(Pt == cPieza.PEON || Pt == cPieza.ALFIL || Pt == cPieza.DAMA)
         attackers |= cBitBoard.AtaquesPieza(to, occupied, cPieza.ALFIL) & (bb[cPieza.ALFIL] | bb[cPieza.DAMA]);
-      if (Pt == cPieza.TORRE || Pt == cPieza.DAMA)
+      if(Pt == cPieza.TORRE || Pt == cPieza.DAMA)
         attackers |= cBitBoard.AtaquesPieza(to, occupied, cPieza.TORRE) & (bb[cPieza.TORRE] | bb[cPieza.DAMA]);
       attackers &= occupied;
       return (type)Pt;
@@ -409,24 +408,24 @@ namespace Motor
     public static void Init()
     {
       cAleatorio rk = new cAleatorio(4474);
-      for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
+      for(color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
       {
         cHashZobrist.m_sqPeon[c] = new hash[8][];
-        for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+        for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
         {
           cHashZobrist.m_sqPeon[c][pt] = new hash[64];
-          for (sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
+          for(sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
             cHashZobrist.m_sqPeon[c][pt][s] = rk.GetRand();
         }
       }
 
-      for (colum f = COLUMNA.A; f <= COLUMNA.H; ++f)
+      for(colum f = COLUMNA.A; f <= COLUMNA.H; ++f)
         cHashZobrist.m_EnPaso[f] = rk.GetRand();
-      
-      for (int cf = cEnroque.NO_ENROQUE; cf <= cEnroque.CUALQUIER_ENROQUE; ++cf)
+
+      for(int cf = cEnroque.NO_ENROQUE; cf <= cEnroque.CUALQUIER_ENROQUE; ++cf)
       {
         bitbrd b = (bitbrd)cf;
-        while (b != 0)
+        while(b != 0)
         {
           hash k = cHashZobrist.m_Enroque[1UL << cBitBoard.GetLSB(ref b)];
           cHashZobrist.m_Enroque[cf] ^= k != 0 ? k : rk.GetRand();
@@ -435,29 +434,29 @@ namespace Motor
 
       cHashZobrist.m_Bando = rk.GetRand();
       cHashZobrist.m_Exclusion = rk.GetRand();
-      for (int i = 0; i < cColor.SIZE; i++)
+      for(int i = 0; i < cColor.SIZE; i++)
       {
         m_nSqPeon[i] = new pnt[cPieza.SIZE][];
-        for (int k = 0; k < cPieza.SIZE; k++)
+        for(int k = 0; k < cPieza.SIZE; k++)
         {
           m_nSqPeon[i][k] = new pnt[cCasilla.ESCAQUES];
         }
       }
 
-      for (int i = 0; i < cColor.SIZE; i++)
+      for(int i = 0; i < cColor.SIZE; i++)
       {
         m_nSqPeon[i] = new pnt[cPieza.SIZE][];
-        for (int k = 0; k < cPieza.SIZE; k++)
+        for(int k = 0; k < cPieza.SIZE; k++)
         {
           m_nSqPeon[i][k] = new pnt[cCasilla.ESCAQUES];
         }
       }
-      for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+      for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
       {
         m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][cTypes.CreaPieza(cColor.NEGRO, pt)] = m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][pt];
         m_nValPieza[cFaseJuego.FASE_FINAL][cTypes.CreaPieza(cColor.NEGRO, pt)] = m_nValPieza[cFaseJuego.FASE_FINAL][pt];
         pnt v = cTypes.Puntua(m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][pt], m_nValPieza[cFaseJuego.FASE_FINAL][pt]);
-        for (sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
+        for(sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
         {
           m_nSqPeon[cColor.BLANCO][pt][s] = (v + cTablero.TABLERO[pt][s]);
           m_nSqPeon[cColor.NEGRO][pt][cTypes.CasillaVS(s)] = -(v + cTablero.TABLERO[pt][s]);
@@ -469,9 +468,7 @@ namespace Motor
     public void CopyFrom(cPosicion pos)
     {
       Array.Copy(pos.m_Tablero, m_Tablero, cCasilla.ESCAQUES);
-#if CHESSARIA
       Array.Copy(pos.m_Obstaculos, m_Obstaculos, cCasilla.ESCAQUES);
-#endif
       Array.Copy(pos.byTypeBB, byTypeBB, cPieza.SIZE);
       Array.Copy(pos.byColorBB, byColorBB, cColor.SIZE);
       Array.Copy(pos.m_nIndex, m_nIndex, cCasilla.ESCAQUES);
@@ -513,9 +510,7 @@ namespace Motor
       m_nPly = 0;
       m_bIsChess960 = false;
       Array.Clear(m_Tablero, 0, cCasilla.ESCAQUES);
-#if CHESSARIA
       Array.Clear(m_Obstaculos, 0, cCasilla.ESCAQUES);
-#endif
       Array.Clear(byTypeBB, 0, cPieza.SIZE);
       Array.Clear(byColorBB, 0, cColor.SIZE);
       Array.Clear(m_nIndex, 0, cCasilla.ESCAQUES);
@@ -527,12 +522,57 @@ namespace Motor
       m_estadoInicial.Clear();
       m_estadoInicial.enCasillaPeonuare = cCasilla.NONE;
       m_PosInfo = m_estadoInicial;
-      for (int i = 0; i < cPieza.SIZE; ++i)
-        for (int j = 0; j < 16; ++j)
+      for(int i = 0; i < cPieza.SIZE; ++i)
+        for(int j = 0; j < 16; ++j)
           m_lstPiezas[cColor.BLANCO][i][j] = m_lstPiezas[cColor.NEGRO][i][j] = cCasilla.NONE;
     }
 
+    //----------------------------------------------------------------------------------------------   
+    public string DibujaTablero()
+    {
+      StringBuilder ss = new StringBuilder();
+      mov m = cSearch.RootMoves[0].m_PV[0];
+      if(m != 0)
+      {
+        ss.Append(cTypes.LF + "Mov: " + (m_clrActivo == cColor.NEGRO ? ".." : ""));
+        ss.Append(cUci.GetMovimiento(m, m_bIsChess960));
+      }
 
+      ss.Append(cTypes.LF + " +---+---+---+---+---+---+---+---+" + cTypes.LF);
+
+      const string PieceToChar = " PNBRQK pnbrqk";
+      
+      for(fila r = FILA.F8; r >= FILA.F1; --r)
+      {
+        for(colum f = COLUMNA.A; f <= COLUMNA.H; ++f)
+        {
+          sq casilla = cTypes.CreaCasilla(f, r);
+          if(IsObstaculo(casilla) == true)
+            ss.Append(" | " + 'O');
+          else if(IsWall(casilla) == true)
+            ss.Append(" | " + 'W');
+          else
+          {
+            int nTipo = cTypes.TipoPieza(GetPieza(casilla));
+            int nColor = cTypes.GetColor(m_Tablero[casilla]) == cColor.BLANCO ? 0 : 1;
+            ss.Append(" | " + PieceToChar[nTipo + (7 * nColor)]);
+          }
+        }
+        ss.Append(" |" + cTypes.LF + " +---+---+---+---+---+---+---+---+" + cTypes.LF);
+      }
+
+      //ss.Append(cTypes.LF + "Fen: " + fen() + cTypes.LF + "Key: " + st.key.ToString("X").ToUpper().PadLeft(16, '0') + cTypes.LF + "Checkers: ");
+
+      //for(bitbrd b = Jaques(); b != 0;)
+      //  ss.Append(cTypes.square_to_string(cBitBoard.GetLSB(ref b)) + " ");
+
+      ss.Append(cTypes.LF + "Legales: ");
+      for(cReglas listaMovimientos = new cReglas(this, cMovType.LEGAL); listaMovimientos.GetActualMov() != cMovType.MOV_NAN; ++listaMovimientos)
+        ss.Append(cUci.GetMovimiento(listaMovimientos.GetActualMov(), m_bIsChess960) + " ");
+    
+      return ss.ToString();
+
+    }
     //--------------------------------------------------------------------------------------------------------------------------------
     public void SetFEN(string fenStr, bool bChess960, cThread th)
     {
@@ -546,13 +586,41 @@ namespace Motor
 
       while ((token = fen[ss++]) != ' ')
       {
-        if (IsNum(token))
+        if(IsNum(token))
           sq += (token - '0');
-        else if (token == '/')
+        else if(token == '/')
           sq -= 16;
+        else if(token == '[')
+        {
+          while((fen[ss++]) != ']')
+            ;
+        }
+        else if(token == '-')
+        {
+          sq++;
+        }
+        else if(token == 'O')
+        {
+          int sso = ss;
+          if(fen[sso++] == '[')
+          {
+            while((fen[sso++]) != ']');
+            string ssoString = fenStr.Substring(ss, sso - ss);
+            if(ssoString.IndexOf("pass=false") > 0)
+              SetWall(sq);
+            else
+              SetAgujero(sq);
+          }
+          sq++;
+        }
+        else if(token == 'C')
+        {
+          SetColeccionable(sq);
+          sq++;
+        }
         else
         {
-          if ((idx = (SByte)m_strPieza.IndexOf(token)) > -1)
+          if((idx = (SByte)m_strPieza.IndexOf(token)) > -1)
           {
             SetPieza(sq, cTypes.GetColor(idx), cTypes.TipoPieza(idx));
             ++sq;
@@ -708,10 +776,9 @@ namespace Motor
       sq from = cTypes.GetFromCasilla(m);
       sq to = cTypes.GetToCasilla(m);
 
-#if CHESSARIA
       if(IsObstaculo(to) == true)
         return false;
-#endif
+
       if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
       {
         sq ksq = GetRey(us);
@@ -844,9 +911,7 @@ namespace Motor
     {
       ++m_nNodos;
       hash k = m_PosInfo.key;
-
-
-
+      
       newSt.pawnKey = m_PosInfo.pawnKey;
       newSt.materialKey = m_PosInfo.materialKey;
       newSt.npMaterial[0] = m_PosInfo.npMaterial[0];
@@ -860,8 +925,7 @@ namespace Motor
       m_PosInfo = newSt;
 
       k ^= cHashZobrist.m_Bando;
-
-
+      
       ++m_nPly;
       ++m_PosInfo.rule50;
       ++m_PosInfo.pliesFromNull;
@@ -907,7 +971,7 @@ namespace Motor
       }
 
       k ^= cHashZobrist.m_sqPeon[us][pt][from] ^ cHashZobrist.m_sqPeon[us][pt][to];
-
+      
       if (m_PosInfo.enCasillaPeonuare != cCasilla.NONE)
       {
         k ^= cHashZobrist.m_EnPaso[cTypes.Columna(m_PosInfo.enCasillaPeonuare)];
@@ -1121,15 +1185,14 @@ namespace Motor
       return swapList[0];
     }
 
-#if CHESSARIA
     //--------------------------------------------------------------------------------------------------------------------------------
     public bool IsObstaculo(sq m)
     {
       bool bRet = false;
       try
       {
-        Debug.Assert(m >= 0 && m < cCasilla.ESCAQUES);
-        bRet = m_Obstaculos[m];
+        if (m >= 0 && m < cCasilla.ESCAQUES)
+          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.NAN;
       }
       catch(Exception ex)
       {
@@ -1142,18 +1205,46 @@ namespace Motor
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
+    public bool IsWall(sq m)
+    {
+      bool bRet = false;
+      
+      try
+      {
+        if(m >= 0 && m < cCasilla.ESCAQUES)
+        {
+          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.PEON_BLANCO;
+        }
+      }
+      catch(Exception ex)
+      {
+#if DEBUG
+        Debug.Print(ex.Message);
+#endif
+        bRet = false;
+      }
+      return bRet;
+    }
+
+
+    //--------------------------------------------------------------------------------------------------------------------------------
     public void SetWall(sq m)
     {
       m_Obstaculos[m] = true;
-      SetPieza(m, cColor.BLANCO, cPieza.NAN);
+      SetPieza(m, cColor.BLANCO, cPieza.PEON_BLANCO);
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
-    public void SetAgujero(sq m)
+    public void SetAgujero(sq q)
     {
-      m_Obstaculos[m] = true;
+      m_Obstaculos[q] = true;
     }
-#endif
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public void SetColeccionable(sq q)
+    {
+      //m_Obstaculos[q] = true;
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------------
     public bool IsTablas()

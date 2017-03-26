@@ -222,8 +222,8 @@ namespace InOut
       }
 
 #if CHESSARIA_TEST
-      pos.SetAgujero(cCasilla.H1);
-      pos.SetAgujero(cCasilla.H8);
+      //pos.SetAgujero(cCasilla.D6);
+      //pos.SetAgujero(cCasilla.H8);
       /*pos.SetAgujero(cCasilla.D4);
       pos.SetAgujero(cCasilla.D5);
       pos.SetAgujero(cCasilla.E4);

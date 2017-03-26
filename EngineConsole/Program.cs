@@ -21,16 +21,16 @@ namespace EngineConsole
       
       //cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
       // or
-      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/---O----/--------/--OOO---/---OOO--/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
       cMotor.m_Consola.SetDelegateFunction(FromEngine);
 
       cMotor.m_UCI.Command("uci", ref posStart);
       cMotor.m_UCI.Command("setoption name Hash value 128", ref posStart);
-      cMotor.m_UCI.Command("setoption name Ponder value true", ref posStart);
-      cMotor.m_UCI.Command("setoption name Threads value 1", ref posStart); //-- From 1 to 16
-      cMotor.m_UCI.Command("setoption name UCI_LimitStrength value true", ref posStart); //-- From 1 to 16
-      cMotor.m_UCI.Command("setoption name UCI_Elo value 1300", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("setoption name Ponder value false", ref posStart);
+      cMotor.m_UCI.Command("setoption name Threads value 8", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("setoption name UCI_LimitStrength value true", ref posStart);
+      cMotor.m_UCI.Command("setoption name UCI_Elo value 3000", ref posStart); //-- From 200 to 300
       cMotor.m_UCI.Command("ucinewgame", ref posStart);
       cMotor.m_UCI.Command("isready", ref posStart);
 
@@ -40,10 +40,10 @@ namespace EngineConsole
       //posStart.SetAgujero(cCasilla.H8);
 
       //-- FEN position
-      //cMotor.m_UCI.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
+      cMotor.m_UCI.Command("position fen -rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11", ref posStart);
 
       //-- History moves
-      cMotor.m_UCI.Command("position startpos moves e2e4", ref posStart);
+      //cMotor.m_UCI.Command("position startpos moves e2e4", ref posStart);
 
       //-- Holes (agujero) and walls(obstaculo) before thinking
       /*posStart.SetAgujero(cCasilla.D4);
@@ -65,10 +65,13 @@ namespace EngineConsole
       */
       //cMotor.m_UCI.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
       cMotor.m_UCI.Command("go wtime 3000000 btime 3000000 winc 0 binc 0", ref posStart);
+      
 
       //-- Waiting and stop when user needs
       System.Threading.Thread.Sleep(3000);
+      Debug.Write(posStart.DibujaTablero());
       cMotor.m_UCI.Command("stop", ref posStart);
+      
 #else
       cMotor motor = new cMotor(args);
 #endif

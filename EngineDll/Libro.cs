@@ -87,11 +87,8 @@ namespace Book
 
           if(pt != 0)
           {
-#if CHESSARIA
             if(posicion.IsObstaculo(cTypes.GetToCasilla(move)) == false)
-#endif
             {
-
               move = cTypes.CreaMov(cTypes.GetFromCasilla(move), cTypes.GetToCasilla(move), cMovType.PROMOCION, (pt + 1));
 
               for(cReglas listaMovimientos = new cReglas(posicion, cMovType.LEGAL); listaMovimientos.GetActualMov() != cMovType.MOV_NAN; ++listaMovimientos)

@@ -23,13 +23,16 @@ namespace Motor
 
     private static string[] Defaults = new string[]
       {
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "-rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11",
+        "rnbqkbnr/pppppppp/---O[pass=true]----/--O[pass=false,skin=obstacle_pass1]-----/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1"/*,
+        "3rr3/2nnnn2/2pppp2/8/8/2PPPP2/2NNNN2/3RR3 w - - 0 1",
+        "2rrrr2/2pppp2/8/8/8/8/2PPPP2/2RRRR2 w - - 0 1",
         "/8/8/8/8/1P6/K5k1/8 b - - 0 1",
         "3rr1k1/p1p4p/1p4p1/3PPn2/q1P5/3Q4/PBP3PP/1R3RK1 w - - 0 22",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 10",
         "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 11",
-        "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19"
+        "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19"*/
       };
 
     //---------------------------------------------------------------------------------------------
@@ -134,6 +137,8 @@ namespace Motor
         m_Threads.Analizando(posicion, limits, st);
         m_Threads.WaitAnalizando();
         nodes += (Int64)cSearch.RootPos.GetNodos();
+
+        m_Consola.Print(posicion.DibujaTablero(), AccionConsola.NADA);
       }
 
       elapsed = cReloj.Now() - elapsed + 1;

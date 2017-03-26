@@ -18,11 +18,8 @@ namespace InOut
   public class cConsola
   {
     private System.Threading.Mutex m_Mutex;
-#if CHESSARIA
-#else
     private TextReader m_In;
     private TextWriter m_Out;
-#endif
     private Action<string> m_CallBackFunction = null;
 
     public void SetDelegateFunction(Action<string> callBackFunction)
@@ -34,11 +31,16 @@ namespace InOut
     public cConsola(TextReader inputReader, TextWriter outputWriter)
     {
       m_Mutex = new System.Threading.Mutex();
-#if CHESSARIA
-#else
-      m_In = inputReader;
-      m_Out = outputWriter;
-#endif
+
+      if(m_CallBackFunction != null)
+      {
+      }
+      else
+      {
+        m_In = inputReader;
+        m_Out = outputWriter;
+      }
+      
       m_CallBackFunction = null;
     }
 
@@ -60,18 +62,22 @@ namespace InOut
       string cad = "";
       if (accion == AccionConsola.GET || accion == AccionConsola.ATOMIC)
         m_Mutex.WaitOne();
-#if CHESSARIA
-#else
-      cad = m_In.ReadLine();
-      
-      if(cMotor.m_mapConfig["Log"].Get() != 0)
+      if(m_CallBackFunction != null)
       {
-        using (StreamWriter w = File.AppendText("log.txt"))
+      }
+      else
+      {
+        cad = m_In.ReadLine();
+
+        if(cMotor.m_mapConfig["Log"].Get() != 0)
         {
-          LogRead(cad, w);
+          using(StreamWriter w = File.AppendText("log.txt"))
+          {
+            LogRead(cad, w);
+          }
         }
       }
-#endif
+
       if(accion == AccionConsola.RELEASE || accion == AccionConsola.ATOMIC)
         m_Mutex.ReleaseMutex();
 
@@ -84,12 +90,13 @@ namespace InOut
       if (accion == AccionConsola.GET || accion == AccionConsola.ATOMIC)
         m_Mutex.WaitOne();
 
-#if CHESSARIA
       if(m_CallBackFunction != null)
         m_CallBackFunction(cad);
-#else
-      m_Out.Write(cad);
-#endif
+      else
+      {
+        m_Out.Write(cad);
+      }
+      
       foreach(var line in cad.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
       {
         if (cMotor.m_mapConfig["Log"].Get() != 0)
