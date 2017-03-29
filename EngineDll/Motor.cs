@@ -23,16 +23,15 @@ namespace Motor
 
     private static string[] Defaults = new string[]
       {
-        "-rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11",
-        "rnbqkbnr/pppppppp/---O[pass=true]----/--O[pass=false,skin=obstacle_pass1]-----/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1"/*,
-        "3rr3/2nnnn2/2pppp2/8/8/2PPPP2/2NNNN2/3RR3 w - - 0 1",
-        "2rrrr2/2pppp2/8/8/8/8/2PPPP2/2RRRR2 w - - 0 1",
+        /*"rbkqbbbr/-p-p----/p-p-p---/C------C/O[pass=true]O[pass=true]O[pass=false]O[pass=false]O[pass=false]O[pass=true]O[pass=true]O[pass=true]/C------C/PPPPP---/RBQKBBBR w - - 0 11",
+        "rnbqkbnr/pppppppp/---O[pass=true]----/--O[pass=false,skin=obstacle_pass1]-----/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1",*/
+        "2k2r2/2pr3p/Q5p1/3NB3/P3n3/1P2R3/2q3PP/3R2K1 b - - 0 29",
         "/8/8/8/8/1P6/K5k1/8 b - - 0 1",
         "3rr1k1/p1p4p/1p4p1/3PPn2/q1P5/3Q4/PBP3PP/1R3RK1 w - - 0 22",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 10",
         "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 11",
-        "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19"*/
+        "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19"
       };
 
     //---------------------------------------------------------------------------------------------
@@ -51,9 +50,9 @@ namespace Motor
     }
 
     //---------------------------------------------------------------------------------------------
-    public static void Init(int nLevel = 10)
+    public static void Init()
     {
-      cMotor.m_ConfigFile.SetNivel(nLevel);
+      cMotor.m_ConfigFile.SetNivel(cConfigFile.MAX_LEVEL);
 
       cMotor.m_UCI.Init(cMotor.m_mapConfig);
 
@@ -69,7 +68,7 @@ namespace Motor
     //---------------------------------------------------------------------------------------------
     public cMotor(string[] args)
     {
-      m_ConfigFile.SetNivel(10);
+      m_ConfigFile.SetNivel(cConfigFile.MAX_LEVEL);
 
       m_UCI.Init(m_mapConfig);
 
@@ -111,10 +110,10 @@ namespace Motor
       m_TablaHash.Clear();
 
       m_mapConfig["Threads"].setCurrentValue("8");
-
-      //m_mapConfig["UCI_LimitStrength"].setCurrentValue("true");
-      //m_mapConfig["Level"].setCurrentValue("2");
       
+      //m_mapConfig["UCI_LimitStrength"].setCurrentValue("true");
+      m_mapConfig["Level"].setCurrentValue("15");
+
 
       //-- Tiempo en milisegundos
       limits.movetime = 1000 * 10;

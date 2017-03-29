@@ -84,7 +84,7 @@ namespace Motor
       if(Chess960&&(cBitBoard.AtaquesPieza(kto, pos.Piezas()^cBitBoard.m_nCasillas[rfrom], cPieza.TORRE)&pos.PiezasColor(cTypes.Contrario(us), cPieza.TORRE, cPieza.DAMA))!=0)
         return mPos;
 
-      if(pos.IsObstaculo(rfrom) == false)
+      if(pos.IsObstaculo(rfrom) == false && pos.IsObstaculo(rfrom) == false)
       {
         mov m = cTypes.CreaMov(kfrom, rfrom, cMovType.ENROQUE, cPieza.CABALLO);
 
@@ -105,7 +105,7 @@ namespace Motor
       while(b!=0)
       {
         sq to = cBitBoard.GetLSB(ref b);
-        if(pos.IsObstaculo(to) == false)
+        if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Delta) == false)
         {
 
           if(Type == cMovType.CAPTURES || Type == cMovType.EVASIONS || Type == cMovType.NON_EVASIONS)
@@ -176,14 +176,14 @@ namespace Motor
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Up) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Up, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Up - Up) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Up-Up, to);
         }
       }
@@ -209,14 +209,14 @@ namespace Motor
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Right) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Right, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Left) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Left, to);
         }
 
@@ -230,7 +230,7 @@ namespace Motor
           while(b1 != 0)
           {
             type btb = cBitBoard.GetLSB(ref b1);
-            if(pos.IsObstaculo(pos.CasillaEnPaso()) == false)
+            if(pos.IsObstaculo(pos.CasillaEnPaso()) == false && pos.IsObstaculo(btb) == false)
               mlist[mPos++].m = cTypes.CreaMov(btb, pos.CasillaEnPaso(), cMovType.ENPASO, cPieza.CABALLO);
           }
         }
@@ -267,7 +267,7 @@ namespace Motor
         while(b != 0)
         {
           type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(from) == false && pos.IsObstaculo(to) == false)
             mlist[mPos++].m = cTypes.CreaMov(from, to);
         }
       }
@@ -293,7 +293,7 @@ namespace Motor
         while(b != 0)
         {
           type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(ksq) == false && pos.IsObstaculo(to) == false)
             mlist[mPos++].m = cTypes.CreaMov(ksq, to);
         }
       }
@@ -347,7 +347,7 @@ namespace Motor
       while(b != 0)
       {
         type to = cBitBoard.GetLSB(ref b);
-        if(pos.IsObstaculo(to) == false)
+        if(pos.IsObstaculo(ksq) == false && pos.IsObstaculo(to) == false)
           mlist[mPos++].m = cTypes.CreaMov(ksq, to);
       }
 
@@ -373,14 +373,13 @@ namespace Motor
 
       while(cur != end)
       {
-        if(pos.IsObstaculo(end) == true || pos.IsObstaculo(cur))
+        if(pos.IsObstaculo(end) == true || pos.IsObstaculo(cur) == true)
           mlist[cur].m = mlist[--end].m;
         else if((pinned != 0 || cTypes.GetFromCasilla(mlist[cur].m) == ksq || cTypes.TipoMovimiento(mlist[cur].m) == cMovType.ENPASO)
             && pos.IsLegalMov(mlist[cur].m, pinned) == false)
           mlist[cur].m = mlist[--end].m;
         else
           ++cur;
-
       }
 
       return end;
@@ -410,7 +409,7 @@ namespace Motor
         while(b != 0)
         {
           type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(from) == false && pos.IsObstaculo(to) == false)
             mlist[mPos++].m = cTypes.CreaMov(from, to);
         }
       }

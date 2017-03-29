@@ -388,13 +388,13 @@ namespace Motor
         m_Ataques[p] = new bitbrd[cCasilla.ESCAQUES];
 
       for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
-        for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+        for (type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
           for (sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
             for (int i = 0; steps[pt][i] != 0; ++i)
             {
               sq to = s + (sq)(c == cColor.BLANCO ? steps[pt][i] : -steps[pt][i]);
 
-              if (cTypes.IsCasillaOcupada(to) && cBitBoard.Distancia(s, to) < 3)
+              if (cTypes.IsCasillaOcupable(to) && cBitBoard.Distancia(s, to) < 3)
                 m_Ataques[cTypes.CreaPieza(c, pt)][s] |= m_nCasillas[to];
             }
 
@@ -440,7 +440,7 @@ namespace Motor
 
       for (int i = 0; i < 4; ++i)
         for (sq s = sq + deltas[i];
-             cTypes.IsCasillaOcupada(s) && cBitBoard.Distancia(s, s - deltas[i]) == 1;
+             cTypes.IsCasillaOcupable(s) && cBitBoard.Distancia(s, s - deltas[i]) == 1;
              s += deltas[i])
         {
           attack |= m_nCasillas[s];

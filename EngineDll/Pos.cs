@@ -28,7 +28,9 @@ namespace Motor
     private bitbrd[] byTypeBB = new bitbrd[cPieza.SIZE];
     private bitbrd[] byColorBB = new bitbrd[cColor.SIZE];
     private int[][] m_nNumPiezas = new int[cColor.SIZE][] { new int[cPieza.SIZE], new int[cPieza.SIZE] };
-    public sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] { new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] }, new sq[cPieza.SIZE][] { new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16], new sq[16] } };
+    public sq[][][] m_lstPiezas = new sq[cColor.SIZE][][] {
+      new sq[cPieza.SIZE][] { new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[16], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2] },
+      new sq[cPieza.SIZE][] { new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[cPieza.SIZE2], new sq[16], new sq[cPieza.SIZE2] } };
     private int[] m_nIndex = new int[cCasilla.ESCAQUES];
 
     private bool[] m_Obstaculos = new bool[cCasilla.ESCAQUES];
@@ -410,8 +412,8 @@ namespace Motor
       cAleatorio rk = new cAleatorio(4474);
       for(color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
       {
-        cHashZobrist.m_sqPeon[c] = new hash[8][];
-        for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+        cHashZobrist.m_sqPeon[c] = new hash[cPieza.SIZE][];
+        for(type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
         {
           cHashZobrist.m_sqPeon[c][pt] = new hash[64];
           for(sq s = cCasilla.A1; s <= cCasilla.H8; ++s)
@@ -451,7 +453,7 @@ namespace Motor
           m_nSqPeon[i][k] = new pnt[cCasilla.ESCAQUES];
         }
       }
-      for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+      for(type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
       {
         m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][cTypes.CreaPieza(cColor.NEGRO, pt)] = m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][pt];
         m_nValPieza[cFaseJuego.FASE_FINAL][cTypes.CreaPieza(cColor.NEGRO, pt)] = m_nValPieza[cFaseJuego.FASE_FINAL][pt];
@@ -523,8 +525,10 @@ namespace Motor
       m_estadoInicial.enCasillaPeonuare = cCasilla.NONE;
       m_PosInfo = m_estadoInicial;
       for(int i = 0; i < cPieza.SIZE; ++i)
-        for(int j = 0; j < 16; ++j)
+        for(int j = 0; j < cPieza.SIZE * 2; ++j)
+        {
           m_lstPiezas[cColor.BLANCO][i][j] = m_lstPiezas[cColor.NEGRO][i][j] = cCasilla.NONE;
+        }
     }
 
     //----------------------------------------------------------------------------------------------   
@@ -551,6 +555,8 @@ namespace Motor
             ss.Append(" | " + 'O');
           else if(IsWall(casilla) == true)
             ss.Append(" | " + 'W');
+          else if(IsTesoro(casilla) == true)
+            ss.Append(" | " + 'T');
           else
           {
             int nTipo = cTypes.TipoPieza(GetPieza(casilla));
@@ -609,13 +615,13 @@ namespace Motor
             if(ssoString.IndexOf("pass=false") > 0)
               SetWall(sq);
             else
-              SetAgujero(sq);
+              SetObstaculo(sq);
           }
           sq++;
         }
         else if(token == 'C')
         {
-          SetColeccionable(sq);
+          SetTesoro(sq);
           sq++;
         }
         else
@@ -719,7 +725,9 @@ namespace Motor
       {
         sq s = cBitBoard.GetLSB(ref b);
         pieza pc = GetPieza(s);
-        si.key ^= cHashZobrist.m_sqPeon[cTypes.GetColor(pc)][cTypes.TipoPieza(pc)][s];
+        color c = cTypes.GetColor(pc);
+        pieza tipoPieza = cTypes.TipoPieza(pc);
+        si.key ^= cHashZobrist.m_sqPeon[c][tipoPieza][s];
         si.nCasillaPeon += m_nSqPeon[cTypes.GetColor(pc)][cTypes.TipoPieza(pc)][s];
       }
       if (CasillaEnPaso() != cCasilla.NONE)
@@ -733,7 +741,7 @@ namespace Motor
         si.pawnKey ^= cHashZobrist.m_sqPeon[cTypes.GetColor(GetPieza(s))][cPieza.PEON][s];
       }
       for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
-        for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+        for (type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
           for (int cnt = 0; cnt < m_nNumPiezas[c][pt]; ++cnt)
             si.materialKey ^= cHashZobrist.m_sqPeon[c][pt][cnt];
       for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
@@ -776,7 +784,7 @@ namespace Motor
       sq from = cTypes.GetFromCasilla(m);
       sq to = cTypes.GetToCasilla(m);
 
-      if(IsObstaculo(to) == true)
+      if(IsObstaculo(to) == true || IsObstaculo(from) == true)
         return false;
 
       if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
@@ -1208,7 +1216,7 @@ namespace Motor
     public bool IsWall(sq m)
     {
       bool bRet = false;
-      
+      return false;
       try
       {
         if(m >= 0 && m < cCasilla.ESCAQUES)
@@ -1225,17 +1233,45 @@ namespace Motor
       }
       return bRet;
     }
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public bool IsTesoro(sq m)
+    {
+      bool bRet = false;
+      return false;
 
+      try
+      {
+        if(m >= 0 && m < cCasilla.ESCAQUES)
+        {
+          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.PEON_NEGRO;
+        }
+      }
+      catch(Exception ex)
+      {
+#if DEBUG
+        Debug.Print(ex.Message);
+#endif
+        bRet = false;
+      }
+      return bRet;
+    }
 
     //--------------------------------------------------------------------------------------------------------------------------------
     public void SetWall(sq m)
     {
-      m_Obstaculos[m] = true;
-      SetPieza(m, cColor.BLANCO, cPieza.PEON_BLANCO);
+      //m_Obstaculos[m] = true;
+      //SetPieza(m, cColor.NAN, cPieza.PEON);
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
-    public void SetAgujero(sq q)
+    public void SetTesoro(sq m)
+    {
+      //m_Obstaculos[m] = true;
+      //SetPieza(m, cColor.NEGRO, cPieza.PEON);
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public void SetObstaculo(sq q)
     {
       m_Obstaculos[q] = true;
     }
@@ -1293,8 +1329,8 @@ namespace Motor
 
         if ((PiezasColor(cColor.BLANCO) | PiezasColor(cColor.NEGRO)) != Piezas())
           return false;
-        for (type p1 = cPieza.PEON; p1 <= cPieza.REY; ++p1)
-          for (type p2 = cPieza.PEON; p2 <= cPieza.REY; ++p2)
+        for (type p1 = cPieza.PEON; p1 <= cPieza.MAXSIZE; ++p1)
+          for (type p2 = cPieza.PEON; p2 <= cPieza.MAXSIZE; ++p2)
             if (p1 != p2 && (GetNumPiezas(p1) & GetNumPiezas(p2)) != 0)
               return false;
       }
@@ -1332,7 +1368,7 @@ namespace Motor
       {
         ++step;
         for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
-          for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+          for (type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
             if (m_nNumPiezas[c][pt] != cBitBoard.Count(PiezasColor(c, pt)))
               return false;
       }
@@ -1340,7 +1376,7 @@ namespace Motor
       {
         ++step;
         for (color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
-          for (type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+          for (type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
             for (int i = 0; i < m_nNumPiezas[c][pt]; ++i)
               if (m_Tablero[m_lstPiezas[c][pt][i]] != cTypes.CreaPieza(c, pt)
                   || m_nIndex[m_lstPiezas[c][pt][i]] != i)

@@ -195,8 +195,9 @@ namespace InOut
     private Dictionary<string, Dictionary<string, string>> m_Sections = new Dictionary<string, Dictionary<string, string>>();
     private Dictionary<string, Dictionary<string, string>> m_Modified = new Dictionary<string, Dictionary<string, string>>();
 
+    public static int MAX_LEVEL = 16;
     private const string STR_NIVEL = "NIVEL ";
-    public  int m_nNivelJuego = 10;
+    public int m_nNivelJuego = MAX_LEVEL;
 
 
     //------------------------------------------------------------------------------------------------------

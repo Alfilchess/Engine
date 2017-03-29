@@ -87,7 +87,7 @@ namespace Book
 
           if(pt != 0)
           {
-            if(posicion.IsObstaculo(cTypes.GetToCasilla(move)) == false)
+            if(posicion.IsObstaculo(cTypes.GetFromCasilla(move)) == false && posicion.IsObstaculo(cTypes.GetToCasilla(move)) == false)
             {
               move = cTypes.CreaMov(cTypes.GetFromCasilla(move), cTypes.GetToCasilla(move), cMovType.PROMOCION, (pt + 1));
 

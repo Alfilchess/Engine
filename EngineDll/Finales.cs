@@ -836,7 +836,7 @@ namespace Motor
         blackPieceSquares.Clear();
         blackTypesSquares.Clear();
       
-        for(type pt = cPieza.PEON; pt <= cPieza.REY; ++pt)
+        for(type pt = cPieza.PEON; pt <= cPieza.MAXSIZE; ++pt)
         {
           for(int i = 0; i < pos.GetNum(cColor.BLANCO, pt); i++)
           {
@@ -853,9 +853,9 @@ namespace Motor
       }
       catch(Exception ex)
       {
-    #if DEBUG
+#if DEBUG
         Debug.Write(ex.Message);
-    #endif
+#endif
 
       }
       enPassantSquare = pos.CasillaEnPaso();

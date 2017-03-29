@@ -93,10 +93,10 @@ namespace InOut
       config["OwnBook"] = new cOptConfig("OwnBook", config.Count, true, null, true);
       config["MultiPV"] = new cOptConfig("MultiPV", config.Count, 1, 1, 3, null, true, false);
       config["UCI_Chess960"] = new cOptConfig("UCI_Chess960", config.Count, false, null, true);
-      config["Level"] = new cOptConfig("Level", config.Count, 10, 1, 10, cOptConfig.OnLevel, false, false);
+      config["Level"] = new cOptConfig("Level", config.Count, 16, 1, 16, cOptConfig.OnLevel, true, false);
       config["UCI_EngineAbout"] = new cOptConfig("UCI_EngineAbout", config.Count, "www.alfilchess.com", null, true);
       config["UCI_LimitStrength"] = new cOptConfig("UCI_LimitStrength", config.Count, false, null, true);
-      config["UCI_Elo"] = new cOptConfig("UCI_Elo", config.Count, 2400, 400, 2400, cOptConfig.OnElo, true, false);
+      config["UCI_Elo"] = new cOptConfig("UCI_Elo", config.Count, 3000, 200, 3000, cOptConfig.OnElo, true, false);
 
       config["MOVILIDAD_MEDIO_JUEGO"] = new cOptConfig("MOVILIDAD_MEDIO_JUEGO", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
       config["MOVILIDAD_FINAL"] = new cOptConfig("MOVILIDAD_FINAL", config.Count, 50, 0, 200, cOptConfig.OnEval, false, true);
@@ -222,25 +222,18 @@ namespace InOut
       }
 
 #if CHESSARIA_TEST
-      //pos.SetAgujero(cCasilla.D6);
-      //pos.SetAgujero(cCasilla.H8);
-      /*pos.SetAgujero(cCasilla.D4);
-      pos.SetAgujero(cCasilla.D5);
-      pos.SetAgujero(cCasilla.E4);
-      pos.SetAgujero(cCasilla.E5);
-
-      pos.SetObstaculo(cCasilla.A5);
-      pos.SetObstaculo(cCasilla.B5);
-      pos.SetObstaculo(cCasilla.C5);
+      pos.SetWall(cCasilla.A3);
+      pos.SetWall(cCasilla.A5);
       pos.SetObstaculo(cCasilla.A4);
       pos.SetObstaculo(cCasilla.B4);
       pos.SetObstaculo(cCasilla.C4);
-      pos.SetObstaculo(cCasilla.H5);
-      pos.SetObstaculo(cCasilla.G5);
-      pos.SetObstaculo(cCasilla.F5);
+      pos.SetWall   (cCasilla.D4);
+      pos.SetWall   (cCasilla.E4);
       pos.SetObstaculo(cCasilla.F4);
       pos.SetObstaculo(cCasilla.G4);
-      pos.SetObstaculo(cCasilla.H4);*/
+      pos.SetObstaculo(cCasilla.H4);
+      pos.SetWall(cCasilla.H3);
+      pos.SetWall(cCasilla.H5);
 #endif
       try
       {
