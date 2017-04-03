@@ -10,27 +10,28 @@ namespace EngineConsole
     //------------------------------------------------------------------------------
     public static void FromEngine(string str)
     {
-      Debug.Write(str);
+      Debug.WriteLine(str);
     }
   
     //------------------------------------------------------------------------------
     static void Main(string[] args)
     {
 #if CHESSARIA
-      cMotor.Init(10);
+      cMotor.Init();
       
-      //cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
+      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
       // or
-      cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/---O----/--------/--OOO---/---OOO--/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+      //cPosicion posStart = new cPosicion("rnbqkbnr/pppppppp/--------/--------/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
       cMotor.m_Consola.SetDelegateFunction(FromEngine);
 
       cMotor.m_UCI.Command("uci", ref posStart);
       cMotor.m_UCI.Command("setoption name Hash value 128", ref posStart);
       cMotor.m_UCI.Command("setoption name Ponder value false", ref posStart);
-      cMotor.m_UCI.Command("setoption name Threads value 8", ref posStart); //-- From 1 to 16
-      cMotor.m_UCI.Command("setoption name UCI_LimitStrength value true", ref posStart);
-      cMotor.m_UCI.Command("setoption name UCI_Elo value 3000", ref posStart); //-- From 200 to 300
+      cMotor.m_UCI.Command("setoption name Threads value 4", ref posStart); //-- From 1 to 16
+      cMotor.m_UCI.Command("setoption name Level 16", ref posStart);
+      //cMotor.m_UCI.Command("setoption name UCI_LimitStrength value true", ref posStart); 
+      //cMotor.m_UCI.Command("setoption name UCI_Elo value 3000", ref posStart); //-- From 200 to 300
       cMotor.m_UCI.Command("ucinewgame", ref posStart);
       cMotor.m_UCI.Command("isready", ref posStart);
 
@@ -40,7 +41,7 @@ namespace EngineConsole
       //posStart.SetAgujero(cCasilla.H8);
 
       //-- FEN position
-      cMotor.m_UCI.Command("position fen -rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11", ref posStart);
+      //cMotor.m_UCI.Command("position fen -rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11", ref posStart);
 
       //-- History moves
       //cMotor.m_UCI.Command("position startpos moves e2e4", ref posStart);

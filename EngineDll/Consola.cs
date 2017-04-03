@@ -21,6 +21,7 @@ namespace InOut
     private TextReader m_In;
     private TextWriter m_Out;
     private Action<string> m_CallBackFunction = null;
+    private string m_strCallBackString = "";
 
     public void SetDelegateFunction(Action<string> callBackFunction)
     {
@@ -91,7 +92,7 @@ namespace InOut
         m_Mutex.WaitOne();
 
       if(m_CallBackFunction != null)
-        m_CallBackFunction(cad);
+        m_strCallBackString += cad;
       else
       {
         m_Out.Write(cad);
@@ -108,15 +109,24 @@ namespace InOut
         }
       }
 
-      if (accion == AccionConsola.RELEASE || accion == AccionConsola.ATOMIC)
+      if(accion == AccionConsola.RELEASE || accion == AccionConsola.ATOMIC)
+      {
+        if(m_CallBackFunction != null)
+        {
+          m_CallBackFunction(m_strCallBackString);
+          m_strCallBackString = "";
+        }
         m_Mutex.ReleaseMutex();
-
+      }
     }
 
     //-----------------------------------------------------------------------------------
     public void PrintLine(string cad, AccionConsola accion)
     {
-      Print(cad + cTypes.LF, accion);
+      if(m_CallBackFunction != null)
+        Print(cad, accion);
+      else
+        Print(cad + cTypes.LF, accion);
     }
   }
 }

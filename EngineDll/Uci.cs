@@ -277,13 +277,14 @@ namespace InOut
       {
         if (opt.m_bUCI == true)
         {
-          sb.Append(cTypes.LF);
+          
           sb.Append("option name ").Append(opt.m_nNombre).Append(" type ").Append(opt.m_strTipo);
           if (opt.m_strTipo != "button")
             sb.Append(" default ").Append(opt.m_strDefecto);
 
           if (opt.m_strTipo == "spin")
             sb.Append(" min ").Append(opt.m_nMin).Append(" max ").Append(opt.m_nMax);
+          sb.Append(cTypes.LF);
         }
       }
       return sb.ToString();
@@ -313,9 +314,9 @@ namespace InOut
           }
           else if(token == "uci")
           {
-            cMotor.m_Consola.PrintLine("id name " + cMotor.Info(), AccionConsola.GET);
-            cMotor.m_Consola.PrintLine(ShowOption(cMotor.m_mapConfig), AccionConsola.NADA);
-            cMotor.m_Consola.PrintLine("uciok", AccionConsola.RELEASE);
+            cMotor.m_Consola.PrintLine("id name " + cMotor.Info(), AccionConsola.ATOMIC);
+            cMotor.m_Consola.PrintLine(ShowOption(cMotor.m_mapConfig), AccionConsola.ATOMIC);
+            cMotor.m_Consola.PrintLine("uciok", AccionConsola.ATOMIC);
           }
           else if(token == "go")
             GoUCI(pos, stack);
