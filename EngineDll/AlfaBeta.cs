@@ -35,7 +35,7 @@ namespace Motor
       m_PV.Add(m);
       m_PV.Add(cMovType.MOV_NAN);
     }
-    /*
+    
     public static void Ordenar(List<cRaizMov> data, int firstMove, int lastMove)
     {
       cRaizMov tmp;
@@ -49,7 +49,7 @@ namespace Motor
         data[q] = tmp;
       }
     }      
-*/
+/*
     //------------------------------------------------------------------------------------------------
     public static void Ordenar(List<cRaizMov> data, int left, int right)
     {
@@ -76,7 +76,7 @@ namespace Motor
         }
       }
     }
-
+    */
 
     public void extract_pv_from_tt(cPosicion pos)
     {
@@ -277,11 +277,31 @@ namespace Motor
     public static mov GetLevelMove(int nLevel)
 
     {
-      mov best = cMovType.MOV_NAN;
-      double percent = (nLevel * 100) / cConfigFile.MAX_LEVEL;
-      int nLevelRoot = Math.Min(MultiPV - (int)Math.Round(((MultiPV * (percent / 100.0))), 0), MultiPV - 1);
-      best = cSearch.RootMoves[nLevelRoot].m_PV[0];
-    
+      mov best = cSearch.RootMoves[0].m_PV[0];
+      
+      double percent = ((nLevel+1) * 100) / cConfigFile.MAX_LEVEL;
+      int nMinus = 0;
+
+      foreach(cRaizMov mov in cSearch.RootMoves)
+      {
+        if(mov.m_nVal < -cValoresJuego.PEON_MJ*(cConfigFile.MAX_LEVEL-nLevel))
+          break;
+        else
+          nMinus++;
+      }
+
+      Random r = new Random((int)(cReloj.Now() % 50));
+      int rnext = r.Next(1, cConfigFile.MAX_LEVEL);
+
+      if(rnext > nLevel)
+      {
+        int nLevelRoot = 0;
+        if(nMinus > 0)
+          nLevelRoot = Math.Min(nMinus - (int)Math.Round(((nMinus * (percent / 100.0))), 0), nMinus - 1);
+
+        best = cSearch.RootMoves[nLevelRoot].m_PV[0];
+      }
+
       return best;
     }
 
@@ -308,7 +328,7 @@ namespace Motor
 
 
       if(cMotor.m_ConfigFile.m_nNivelJuego != cConfigFile.MAX_LEVEL || cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0 && MultiPV < 4)
-        MultiPV = Math.Min(cMotor.m_ConfigFile.m_nNivelJuego / 2, RootMoves.Count);
+        MultiPV = Math.Min(4, RootMoves.Count);
 
       while (++depth <= cSearch.MAX_PLY && !Signals.STOP && (0 == Limits.depth || depth <= Limits.depth))
       {
@@ -383,7 +403,7 @@ namespace Motor
         }
 
         if(cMotor.m_ConfigFile.m_nNivelJuego != cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0))
-          GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego);
+          bestValue = GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego);
 
         if (Limits.mate != 0
             && bestValue >= cValoresJuego.MATE_MAXIMO

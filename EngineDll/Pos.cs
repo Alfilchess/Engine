@@ -409,7 +409,7 @@ namespace Motor
     //--------------------------------------------------------------------------------------------------------------------------------
     public static void Init()
     {
-      cAleatorio rk = new cAleatorio(4474);
+      cAleatorio rk = new cAleatorio((int)(InOut.cReloj.Now() % 1000));
       for(color c = cColor.BLANCO; c <= cColor.NEGRO; ++c)
       {
         cHashZobrist.m_sqPeon[c] = new hash[cPieza.SIZE][];

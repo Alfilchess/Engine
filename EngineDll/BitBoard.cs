@@ -460,7 +460,7 @@ namespace Motor
 		   		new int[] { 3101,  552, 3555,  926,  834,   26, 2131, 1117 } 
 			};
 
-      cAleatorio rk = new cAleatorio(4474);
+      cAleatorio rk = new cAleatorio((int)(InOut.cReloj.Now() % 1000));
       bitbrd[] occupancy = new UInt64[4096], reference = new UInt64[4096];
       bitbrd edges, b;
       int i, size, booster;

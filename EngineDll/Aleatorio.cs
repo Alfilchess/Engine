@@ -1,4 +1,5 @@
-﻿using System;
+﻿using InOut;
+using System;
 
 //--  RKISS Es un sistema de generación de números pseudoaleatorios para las claves Hash
 //--  George Marsaglia inventó este sistema sobre los 90. Es ThreadSafe
