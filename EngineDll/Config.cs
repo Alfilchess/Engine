@@ -199,6 +199,10 @@ namespace InOut
     private const string STR_NIVEL = "NIVEL ";
     public int m_nNivelJuego = MAX_LEVEL;
 
+    //------------------------------------------------------------------------------------------------------
+    public cConfigFile()
+    {
+    }
 
     //------------------------------------------------------------------------------------------------------
     public cConfigFile(string FileName)

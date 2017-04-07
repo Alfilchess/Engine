@@ -348,7 +348,8 @@ namespace Motor
     {
       m_Tablero[s] = cTypes.CreaPieza(c, pt);
       byTypeBB[cPieza.NAN] |= cBitBoard.m_nCasillas[s];
-      byTypeBB[pt] |= cBitBoard.m_nCasillas[s];
+      if (pt != cPieza.NAN)
+        byTypeBB[pt] |= cBitBoard.m_nCasillas[s];
       byColorBB[c] |= cBitBoard.m_nCasillas[s];
       m_nIndex[s] = m_nNumPiezas[c][pt]++;
       m_lstPiezas[c][pt][m_nIndex[s]] = s;
@@ -551,12 +552,16 @@ namespace Motor
         for(colum f = COLUMNA.A; f <= COLUMNA.H; ++f)
         {
           sq casilla = cTypes.CreaCasilla(f, r);
-          if(IsObstaculo(casilla) == true)
-            ss.Append(" | " + 'O');
+          if(IsTesoro(casilla, cColor.BLANCO) == true)
+            ss.Append(" | " + 'C');
+          else if(IsTesoro(casilla, cColor.NEGRO) == true)
+            ss.Append(" | " + 'D');
+          else if(IsTesoro(casilla, cColor.NAN) == true)
+            ss.Append(" | " + 'E');
           else if(IsWall(casilla) == true)
             ss.Append(" | " + 'W');
-          else if(IsTesoro(casilla) == true)
-            ss.Append(" | " + 'T');
+          else if(IsHole(casilla) == true)
+            ss.Append(" | " + 'O');
           else
           {
             int nTipo = cTypes.TipoPieza(GetPieza(casilla));
@@ -621,7 +626,12 @@ namespace Motor
         }
         else if(token == 'C')
         {
-          SetTesoro(sq);
+          SetTesoro(sq,  cColor.NEGRO);
+          sq++;
+        }
+        else if(token == 'D')
+        {
+          SetTesoro(sq, cColor.BLANCO);
           sq++;
         }
         else
@@ -720,15 +730,23 @@ namespace Motor
       si.key = si.pawnKey = si.materialKey = 0;
       si.npMaterial[cColor.BLANCO] = si.npMaterial[cColor.NEGRO] = cValoresJuego.CERO;
       si.nCasillaPeon = cValoresJuego.CERO;
-      si.checkersBB = AtaquesA(GetRey(m_clrActivo)) & PiezasColor(cTypes.Contrario(m_clrActivo));
+      sq posRey = GetRey(m_clrActivo);
+      if (cTypes.IsCasillaOcupable(posRey)) 
+        si.checkersBB = AtaquesA(GetRey(m_clrActivo)) & PiezasColor(cTypes.Contrario(m_clrActivo));
       for (bitbrd b = Piezas(); b != 0; )
       {
         sq s = cBitBoard.GetLSB(ref b);
         pieza pc = GetPieza(s);
-        color c = cTypes.GetColor(pc);
-        pieza tipoPieza = cTypes.TipoPieza(pc);
-        si.key ^= cHashZobrist.m_sqPeon[c][tipoPieza][s];
-        si.nCasillaPeon += m_nSqPeon[cTypes.GetColor(pc)][cTypes.TipoPieza(pc)][s];
+        if(pc != cPieza.NAN)
+        {
+          color c = cTypes.GetColor(pc);
+          pieza tipoPieza = cTypes.TipoPieza(pc);
+          if(tipoPieza != cPieza.NAN)
+          {
+            si.key ^= cHashZobrist.m_sqPeon[c][tipoPieza][s];
+            si.nCasillaPeon += m_nSqPeon[cTypes.GetColor(pc)][cTypes.TipoPieza(pc)][s];
+          }
+        }
       }
       if (CasillaEnPaso() != cCasilla.NONE)
         si.key ^= cHashZobrist.m_EnPaso[cTypes.Columna(CasillaEnPaso())];
@@ -754,14 +772,16 @@ namespace Motor
     {
       bitbrd b, pinners, result = 0;
       sq ksq = GetRey(kingColor);
-
-      pinners = ((GetNumPiezas(cPieza.TORRE, cPieza.DAMA) & cBitBoard.m_PseudoAtaques[cPieza.TORRE][ksq])
-               | (GetNumPiezas(cPieza.ALFIL, cPieza.DAMA) & cBitBoard.m_PseudoAtaques[cPieza.ALFIL][ksq])) & PiezasColor(cTypes.Contrario(kingColor));
-      while (pinners != 0)
+      if(cTypes.IsCasillaOcupable(ksq))
       {
-        b = cBitBoard.Entre(ksq, cBitBoard.GetLSB(ref pinners)) & Piezas();
-        if (!cBitBoard.MayorQue(b))
-          result |= b & PiezasColor(c);
+        pinners = ((GetNumPiezas(cPieza.TORRE, cPieza.DAMA) & cBitBoard.m_PseudoAtaques[cPieza.TORRE][ksq])
+               | (GetNumPiezas(cPieza.ALFIL, cPieza.DAMA) & cBitBoard.m_PseudoAtaques[cPieza.ALFIL][ksq])) & PiezasColor(cTypes.Contrario(kingColor));
+        while(pinners != 0)
+        {
+          b = cBitBoard.Entre(ksq, cBitBoard.GetLSB(ref pinners)) & Piezas();
+          if(!cBitBoard.MayorQue(b))
+            result |= b & PiezasColor(c);
+        }
       }
       return result;
     }
@@ -784,16 +804,19 @@ namespace Motor
       sq from = cTypes.GetFromCasilla(m);
       sq to = cTypes.GetToCasilla(m);
 
-      if(IsObstaculo(to) == true || IsObstaculo(from) == true)
+      if(IsObstaculo(to, false) == true || IsObstaculo(from, true) == true)
         return false;
 
-      if (cTypes.TipoMovimiento(m) == cMovType.ENPASO)
+      if(cTypes.TipoMovimiento(m) == cMovType.ENPASO)
       {
         sq ksq = GetRey(us);
-        sq canCasillaPeon = to - cTypes.AtaquePeon(us);
-        bitbrd occ = (Piezas() ^ cBitBoard.m_nCasillas[from] ^ cBitBoard.m_nCasillas[canCasillaPeon]) | cBitBoard.m_nCasillas[to];
-        return 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.TORRE) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.TORRE))
-            && 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.ALFIL) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.ALFIL));
+        if(cTypes.IsCasillaOcupable(ksq))
+        {
+          sq canCasillaPeon = to - cTypes.AtaquePeon(us);
+          bitbrd occ = (Piezas() ^ cBitBoard.m_nCasillas[from] ^ cBitBoard.m_nCasillas[canCasillaPeon]) | cBitBoard.m_nCasillas[to];
+          return 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.TORRE) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.TORRE))
+              && 0 == (cBitBoard.AtaquesPieza(ksq, occ, cPieza.ALFIL) & PiezasColor(cTypes.Contrario(us), cPieza.DAMA, cPieza.ALFIL));
+        }
       }
       
       if (cTypes.TipoPieza(GetPieza(from)) == cPieza.REY)
@@ -866,18 +889,20 @@ namespace Motor
     //--------------------------------------------------------------------------------------------------------------------------------
     public bool IsJaque(mov m, cInfoJaque ci)
     {
-      sq from = cTypes.GetFromCasilla(m);
+      if(cTypes.IsCasillaOcupable(ci.m_SqRey))
+      {
+        sq from = cTypes.GetFromCasilla(m);
       sq to = cTypes.GetToCasilla(m);
       type pt = cTypes.TipoPieza(GetPieza(from));
 
-      if ((ci.m_Jaque[pt] & cBitBoard.m_nCasillas[to]) != 0)
+      if((ci.m_Jaque[pt] & cBitBoard.m_nCasillas[to]) != 0)
         return true;
 
-      if (ci.m_Candidatas != 0
+      if(ci.m_Candidatas != 0
           && (ci.m_Candidatas & cBitBoard.m_nCasillas[from]) != 0
           && 0 == cBitBoard.Alineado(from, to, ci.m_SqRey))
         return true;
-      switch (cTypes.TipoMovimiento(m))
+      switch(cTypes.TipoMovimiento(m))
       {
         case cMovType.NORMAL:
           return false;
@@ -903,7 +928,10 @@ namespace Motor
           {
             return false;
           }
+        }
       }
+      else
+        return false;
     }
 
 
@@ -1194,13 +1222,17 @@ namespace Motor
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
-    public bool IsObstaculo(sq m)
+    public bool IsObstaculo(sq m, bool to)
     {
       bool bRet = false;
       try
       {
-        if (m >= 0 && m < cCasilla.ESCAQUES)
-          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.NAN;
+        if(m >= 0 && m < cCasilla.ESCAQUES)
+        {
+          bRet = m_Obstaculos[m];
+          if(bRet == true && to == true)
+            bRet = GetPieza(m) == cPieza.NAN;
+        }
       }
       catch(Exception ex)
       {
@@ -1216,12 +1248,16 @@ namespace Motor
     public bool IsWall(sq m)
     {
       bool bRet = false;
-      return false;
+      
       try
       {
-        if(m >= 0 && m < cCasilla.ESCAQUES)
+        if(m >= 0 && m < cCasilla.ESCAQUES && m_Obstaculos[m])
         {
-          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.PEON_BLANCO;
+          foreach(sq mP in m_lstPiezas[cColor.NEGRO][cPieza.NAN])
+          {
+            if(mP == m)
+              bRet = true;
+          }
         }
       }
       catch(Exception ex)
@@ -1234,16 +1270,42 @@ namespace Motor
       return bRet;
     }
     //--------------------------------------------------------------------------------------------------------------------------------
-    public bool IsTesoro(sq m)
+    public bool IsHole(sq m)
     {
       bool bRet = false;
-      return false;
 
       try
       {
-        if(m >= 0 && m < cCasilla.ESCAQUES)
+        if(m >= 0 && m < cCasilla.ESCAQUES && m_Obstaculos[m])
         {
-          bRet = m_Obstaculos[m] && GetPieza(m) == cPieza.PEON_NEGRO;
+          //foreach(sq mP in m_lstPiezas[cColor.NAN][cPieza.NAN])
+          {
+            //if(mP == m)
+              bRet = true;
+          }
+        }
+      }
+      catch(Exception ex)
+      {
+#if DEBUG
+        Debug.Print(ex.Message);
+#endif
+        bRet = false;
+      }
+      return bRet;
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    public bool IsTesoro(sq m, color c)
+    {
+      bool bRet = false;
+      
+      try
+      {
+        pieza pt = GetPieza(m);
+        if(m >= 0 && m < cCasilla.ESCAQUES && m_Obstaculos[m] && cTypes.GetColor(pt) == c)
+        {
+          bRet = cTypes.TipoPieza(pt) == cPieza.TORRE;
         }
       }
       catch(Exception ex)
@@ -1259,27 +1321,21 @@ namespace Motor
     //--------------------------------------------------------------------------------------------------------------------------------
     public void SetWall(sq m)
     {
-      //m_Obstaculos[m] = true;
-      //SetPieza(m, cColor.NAN, cPieza.PEON);
+      m_Obstaculos[m] = true;
+      SetPieza(m, cColor.NEGRO, cPieza.NAN);
     }
-
+    
     //--------------------------------------------------------------------------------------------------------------------------------
-    public void SetTesoro(sq m)
+    public void SetTesoro(sq m, color c)
     {
-      //m_Obstaculos[m] = true;
-      //SetPieza(m, cColor.NEGRO, cPieza.PEON);
+      m_Obstaculos[m] = true;
+      SetPieza(m, c, cPieza.TORRE);
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
     public void SetObstaculo(sq q)
     {
       m_Obstaculos[q] = true;
-    }
-
-    //--------------------------------------------------------------------------------------------------------------------------------
-    public void SetColeccionable(sq q)
-    {
-      //m_Obstaculos[q] = true;
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------
@@ -1420,14 +1476,18 @@ namespace Motor
     {
       color colorVS = cTypes.Contrario(pos.ColorMueve());
       m_SqRey = pos.GetRey(colorVS);
-      m_Clavadas = pos.PiezasClavadas(pos.ColorMueve());
-      m_Candidatas = pos.CandidatosJaque();
-      m_Jaque[cPieza.PEON] = pos.AtaquesDePeon(m_SqRey, colorVS);
-      m_Jaque[cPieza.CABALLO] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.CABALLO);
-      m_Jaque[cPieza.ALFIL] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.ALFIL);
-      m_Jaque[cPieza.TORRE] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.TORRE);
-      m_Jaque[cPieza.DAMA] = m_Jaque[cPieza.ALFIL] | m_Jaque[cPieza.TORRE];
-      m_Jaque[cPieza.REY] = 0;
+      if(cTypes.IsCasillaOcupable(m_SqRey))
+      {
+
+        m_Clavadas = pos.PiezasClavadas(pos.ColorMueve());
+        m_Candidatas = pos.CandidatosJaque();
+        m_Jaque[cPieza.PEON] = pos.AtaquesDePeon(m_SqRey, colorVS);
+        m_Jaque[cPieza.CABALLO] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.CABALLO);
+        m_Jaque[cPieza.ALFIL] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.ALFIL);
+        m_Jaque[cPieza.TORRE] = pos.AtaquesDesdeTipoDePieza(m_SqRey, cPieza.TORRE);
+        m_Jaque[cPieza.DAMA] = m_Jaque[cPieza.ALFIL] | m_Jaque[cPieza.TORRE];
+        m_Jaque[cPieza.REY] = 0;
+      }
     }
   }
 

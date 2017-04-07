@@ -42,7 +42,7 @@ namespace EngineConsole
 
       //-- FEN position
       //cMotor.m_UCI.Command("position fen -rrrbk--/--bb----/--------/--O[pass=false]O[pass=false]O[pass=false]O[pass=false]--/--O[pass=true]O[pass=true]O[pass=true]O[pass=true]--/--P-----/--PQQR--/---BK--- w - - 0 11", ref posStart);
-
+      //cMotor.m_UCI.Command("position fen r3k2r/5ppp/8/8/8/4R3/PPP1PPPP/R3K2R b KQkq - 0 1", ref posStart);
       //-- History moves
       //cMotor.m_UCI.Command("position startpos moves e2e4", ref posStart);
 
@@ -65,13 +65,13 @@ namespace EngineConsole
       posStart.SetWall(cCasilla.H4);
       */
       //cMotor.m_UCI.Command("position fen 2k5/1n6/1nn5/8/8/8/2NNN3/4K3 w - - 0 1", posStart);
-      cMotor.m_UCI.Command("go wtime 3000000 btime 3000000 winc 0 binc 0", ref posStart);
+      cMotor.m_UCI.Command("go wtime 3000000 btime 3000000 winc 0 binc 0 searchmoves e8g8", ref posStart);
       
 
       //-- Waiting and stop when user needs
       System.Threading.Thread.Sleep(3000);
-      Debug.Write(posStart.DibujaTablero());
-      cMotor.m_UCI.Command("stop", ref posStart);
+      //Debug.Write(posStart.DibujaTablero());
+      //cMotor.m_UCI.Command("stop", ref posStart);
       
 #else
       cMotor motor = new cMotor(args);

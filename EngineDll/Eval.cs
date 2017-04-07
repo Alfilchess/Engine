@@ -117,21 +117,24 @@ namespace Motor
       sq Down = (colr == cColor.BLANCO ? cCasilla.SUR : cCasilla.NORTE);
 
       evalInfo.m_Clavadas[colr] = pos.PiezasClavadas(colr);
-
-      bitbrd b = evalInfo.m_Ataques[colorVS][cPieza.REY] = pos.AtaquesDesdeTipoDePieza(pos.GetRey(colorVS), cPieza.REY);
-      evalInfo.m_Ataques[colr][cPieza.NAN] = evalInfo.m_Ataques[colr][cPieza.PEON] = evalInfo.m_Peones.GetPeonesAtaques(colr);
-
-      if (pos.GetNum(colr, cPieza.DAMA) != 0 && pos.MaterialPieza(colr) > cValoresJuego.DAMA_MJ + cValoresJuego.PEON_MJ)
+      if(cTypes.IsCasillaOcupable(pos.GetRey(colorVS)))
       {
-        evalInfo.m_ReyAcorralado[colorVS] = b | cBitBoard.Desplazamiento(b, Down);
-        b &= evalInfo.m_Ataques[colr][cPieza.PEON];
-        evalInfo.m_AtaquesAlRey[colr] = (b != 0) ? cBitBoard.CountMax15(b) : 0;
-        evalInfo.m_ZonaDelRey[colr] = evalInfo.m_PesoAtaquesAlRey[colr] = 0;
-      }
-      else
-      {
-        evalInfo.m_ReyAcorralado[colorVS] = 0;
-        evalInfo.m_AtaquesAlRey[colr] = 0;
+        bitbrd b = evalInfo.m_Ataques[colorVS][cPieza.REY] = pos.AtaquesDesdeTipoDePieza(pos.GetRey(colorVS), cPieza.REY);
+
+        evalInfo.m_Ataques[colr][cPieza.NAN] = evalInfo.m_Ataques[colr][cPieza.PEON] = evalInfo.m_Peones.GetPeonesAtaques(colr);
+
+        if(pos.GetNum(colr, cPieza.DAMA) != 0 && pos.MaterialPieza(colr) > cValoresJuego.DAMA_MJ + cValoresJuego.PEON_MJ)
+        {
+          evalInfo.m_ReyAcorralado[colorVS] = b | cBitBoard.Desplazamiento(b, Down);
+          b &= evalInfo.m_Ataques[colr][cPieza.PEON];
+          evalInfo.m_AtaquesAlRey[colr] = (b != 0) ? cBitBoard.CountMax15(b) : 0;
+          evalInfo.m_ZonaDelRey[colr] = evalInfo.m_PesoAtaquesAlRey[colr] = 0;
+        }
+        else
+        {
+          evalInfo.m_ReyAcorralado[colorVS] = 0;
+          evalInfo.m_AtaquesAlRey[colr] = 0;
+        }
       }
     }
 
@@ -384,13 +387,15 @@ namespace Motor
         if (rr != 0)
         {
           sq blockSq = casilla + cTypes.AtaquePeon(colr);
+          if(cTypes.IsCasillaOcupable(pos.GetRey(colorVS)) && cTypes.IsCasillaOcupable(pos.GetRey(colr)))
+          {
+            ebonus += (cBitBoard.Distancia(pos.GetRey(colorVS), blockSq) * 5 * rr)
+                 - (cBitBoard.Distancia(pos.GetRey(colr), blockSq) * 2 * rr);
 
-          ebonus += (cBitBoard.Distancia(pos.GetRey(colorVS), blockSq) * 5 * rr)
-                  - (cBitBoard.Distancia(pos.GetRey(colr), blockSq) * 2 * rr);
 
-          if (cTypes.FilaProxima(colr, blockSq) != FILA.F8)
-            ebonus -= (cBitBoard.Distancia(pos.GetRey(colr), blockSq + cTypes.AtaquePeon(colr)) * rr);
-
+            if(cTypes.FilaProxima(colr, blockSq) != FILA.F8)
+              ebonus -= (cBitBoard.Distancia(pos.GetRey(colr), blockSq + cTypes.AtaquePeon(colr)) * rr);
+          }
           if (pos.CasillaVacia(blockSq))
           {
             squaresToQueen = cBitBoard.Atras(colr, casilla);

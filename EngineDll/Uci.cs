@@ -193,47 +193,49 @@ namespace InOut
       while (lista_valores.Count > 0)
       {
         token = lista_valores.Pop();
-        if (token == "searchmoves")
-          while ((token = lista_valores.Pop()) != null)
-            control.searchmoves.Add(cUci.GetFromUCI(pos, token));
+        if(token == "searchmoves")
+        {
+          while(lista_valores.Count > 0 && (token = lista_valores.Pop()) != null)
+            control.searchmoves.Add(cUci.GetFromUCI(pos, token)); 
+        }
 
-        else if (token == "wtime")
+        else if(token == "wtime")
           control.time[cColor.BLANCO] = int.Parse(lista_valores.Pop());
-        else if (token == "btime")
+        else if(token == "btime")
           control.time[cColor.NEGRO] = int.Parse(lista_valores.Pop());
-        else if (token == "winc")
+        else if(token == "winc")
           control.inc[cColor.BLANCO] = int.Parse(lista_valores.Pop());
-        else if (token == "binc")
+        else if(token == "binc")
           control.inc[cColor.NEGRO] = int.Parse(lista_valores.Pop());
-        else if (token == "movestogo")
+        else if(token == "movestogo")
           control.movestogo = int.Parse(lista_valores.Pop());
-        else if (token == "depth")
+        else if(token == "depth")
           control.depth = int.Parse(lista_valores.Pop());
-        else if (token == "nodes")
+        else if(token == "nodes")
           control.nodes = int.Parse(lista_valores.Pop());
-        else if (token == "movetime")
+        else if(token == "movetime")
           control.movetime = int.Parse(lista_valores.Pop());
-        else if (token == "mate")
+        else if(token == "mate")
           control.mate = int.Parse(lista_valores.Pop());
-        else if (token == "infinite")
+        else if(token == "infinite")
           control.infinite = 1;
-        else if (token == "ponder")
+        else if(token == "ponder")
           control.ponder = 1;
       }
 
 #if CHESSARIA_TEST
-      pos.SetWall(cCasilla.A3);
-      pos.SetWall(cCasilla.A5);
-      pos.SetObstaculo(cCasilla.A4);
+      //pos.SetWall(cCasilla.A3);
+      //pos.SetWall(cCasilla.A5);
+      pos.SetTesoro(cCasilla.A4, cColor.BLANCO);
       pos.SetObstaculo(cCasilla.B4);
       pos.SetObstaculo(cCasilla.C4);
       pos.SetWall   (cCasilla.D4);
       pos.SetWall   (cCasilla.E4);
       pos.SetObstaculo(cCasilla.F4);
       pos.SetObstaculo(cCasilla.G4);
-      pos.SetObstaculo(cCasilla.H4);
-      pos.SetWall(cCasilla.H3);
-      pos.SetWall(cCasilla.H5);
+      pos.SetTesoro(cCasilla.H4, cColor.NEGRO);
+      //pos.SetWall(cCasilla.H3);
+      //pos.SetWall(cCasilla.H5);
 #endif
       try
       {

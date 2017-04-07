@@ -16,16 +16,17 @@ namespace Motor
     public static cThreadPool m_Threads = new cThreadPool();
     public static cTablaHash m_TablaHash = new cTablaHash();
     public static cConsola m_Consola = new cConsola(System.Console.In, System.Console.Out);
-    private static string m_strInfo = "ChessEngine 17.4.03 (beta)";
+    private static string m_strInfo = "Chessaria Engine 17.4.04 (beta)";
     private static string m_strAutor = "id author Enrique Sanchez";
-    public static cConfigFile m_ConfigFile = new cConfigFile("ChessEngine.cfg");
+    public static cConfigFile m_ConfigFile = new cConfigFile(/*"ChessEngine.cfg"*/);
     public static cUci m_UCI = new cUci();
 
     private static string[] Defaults = new string[]
       {
-        /*"rbkqbbbr/-p-p----/p-p-p---/C------C/O[pass=true]O[pass=true]O[pass=false]O[pass=false]O[pass=false]O[pass=true]O[pass=true]O[pass=true]/C------C/PPPPP---/RBQKBBBR w - - 0 11",
-        "rnbqkbnr/pppppppp/---O[pass=true]----/--O[pass=false,skin=obstacle_pass1]-----/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1",*/
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"/*,
+        "3nnn2/2ppp3/8/8/8/8/2PPP3/3NNN2 b - - 0 1",
+        "rbkqbbbr/-p-p----/p-p-p---/C------D/O[pass=true]O[pass=true]O[pass=false]O[pass=false]O[pass=false]O[pass=true]O[pass=true]O[pass=true]/D------C/PPPPP---/RBQKBBBR w - - 0 11",
+        /*"rnbqkbnr/pppppppp/---O[pass=true]----/--O[pass=false,skin=obstacle_pass1]-----/--------/--------/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "2k2r2/2pr3p/Q5p1/3NB3/P3n3/1P2R3/2q3PP/3R2K1 b - - 0 29",
         "/8/8/8/8/1P6/K5k1/8 b - - 0 1",
         "3rr1k1/p1p4p/1p4p1/3PPn2/q1P5/3Q4/PBP3PP/1R3RK1 w - - 0 22",

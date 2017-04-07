@@ -84,7 +84,7 @@ namespace Motor
       if(Chess960&&(cBitBoard.AtaquesPieza(kto, pos.Piezas()^cBitBoard.m_nCasillas[rfrom], cPieza.TORRE)&pos.PiezasColor(cTypes.Contrario(us), cPieza.TORRE, cPieza.DAMA))!=0)
         return mPos;
 
-      if(pos.IsObstaculo(rfrom) == false && pos.IsObstaculo(rfrom) == false)
+      if(pos.IsObstaculo(kfrom, false) == false && pos.IsObstaculo(rfrom, true) == false)
       {
         mov m = cTypes.CreaMov(kfrom, rfrom, cMovType.ENROQUE, cPieza.CABALLO);
 
@@ -105,7 +105,7 @@ namespace Motor
       while(b!=0)
       {
         sq to = cBitBoard.GetLSB(ref b);
-        if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Delta) == false)
+        if(pos.IsObstaculo(to, true) == false && pos.IsObstaculo(to - Delta, false) == false)
         {
 
           if(Type == cMovType.CAPTURES || Type == cMovType.EVASIONS || Type == cMovType.NON_EVASIONS)
@@ -160,30 +160,33 @@ namespace Motor
 
         if(Type==cMovType.QUIET_CHECKS)
         {
-          b1&=pos.AtaquesDePeon(ci.m_SqRey, colorVS);
-          b2&=pos.AtaquesDePeon(ci.m_SqRey, colorVS);
-
-          if((pawnsNotOn7&ci.m_Candidatas)!=0)
+          if(cTypes.IsCasillaOcupable(ci.m_SqRey))
           {
-            dc1=cBitBoard.Desplazamiento(pawnsNotOn7&ci.m_Candidatas, Up)&emptySquares&~cBitBoard.GetColumnaSq(ci.m_SqRey);
-            dc2=cBitBoard.Desplazamiento(dc1&TRank3BB, Up)&emptySquares;
+            b1 &= pos.AtaquesDePeon(ci.m_SqRey, colorVS);
+            b2 &= pos.AtaquesDePeon(ci.m_SqRey, colorVS);
 
-            b1|=dc1;
-            b2|=dc2;
+            if((pawnsNotOn7 & ci.m_Candidatas) != 0)
+            {
+              dc1 = cBitBoard.Desplazamiento(pawnsNotOn7 & ci.m_Candidatas, Up) & emptySquares & ~cBitBoard.GetColumnaSq(ci.m_SqRey);
+              dc2 = cBitBoard.Desplazamiento(dc1 & TRank3BB, Up) & emptySquares;
+
+              b1 |= dc1;
+              b2 |= dc2;
+            }
           }
         }
 
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Up) == false)
+          if(pos.IsObstaculo(to, true) == false && pos.IsObstaculo(to - Up, false) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Up, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Up - Up) == false)
+          if(pos.IsObstaculo(to, true) == false && pos.IsObstaculo(to - Up - Up, false) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Up-Up, to);
         }
       }
@@ -209,14 +212,14 @@ namespace Motor
         while(b1!=0)
         {
           sq to = cBitBoard.GetLSB(ref b1);
-          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Right) == false)
+          if(pos.IsObstaculo(to, true) == false && pos.IsObstaculo(to - Right, false) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Right, to);
         }
 
         while(b2!=0)
         {
           sq to = cBitBoard.GetLSB(ref b2);
-          if(pos.IsObstaculo(to) == false && pos.IsObstaculo(to - Left) == false)
+          if(pos.IsObstaculo(to, true) == false && pos.IsObstaculo(to - Left, false) == false)
             mlist[mPos++].m=cTypes.CreaMov(to-Left, to);
         }
 
@@ -230,7 +233,7 @@ namespace Motor
           while(b1 != 0)
           {
             type btb = cBitBoard.GetLSB(ref b1);
-            if(pos.IsObstaculo(pos.CasillaEnPaso()) == false && pos.IsObstaculo(btb) == false)
+            if(pos.IsObstaculo(pos.CasillaEnPaso(), true) == false && pos.IsObstaculo(btb, true) == false)
               mlist[mPos++].m = cTypes.CreaMov(btb, pos.CasillaEnPaso(), cMovType.ENPASO, cPieza.CABALLO);
           }
         }
@@ -256,7 +259,7 @@ namespace Motor
           if(ci.m_Candidatas!=0&&(ci.m_Candidatas&cBitBoard.m_nCasillas[from])!=0)
             continue;
         }
-        if(pos.IsObstaculo(from) == true)
+        if(pos.IsObstaculo(from, false) == true)
           continue;
 
         bitbrd b = pos.AtaquesDesdeTipoDePieza(from, Pt)&target;
@@ -267,7 +270,7 @@ namespace Motor
         while(b != 0)
         {
           type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(from) == false && pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(from, false) == false && pos.IsObstaculo(to, true) == false)
             mlist[mPos++].m = cTypes.CreaMov(from, to);
         }
       }
@@ -289,12 +292,15 @@ namespace Motor
       if(Type!=cMovType.QUIET_CHECKS&&Type!=cMovType.EVASIONS)
       {
         sq ksq = pos.GetRey(us);
-        bitbrd b = pos.AtaquesDesdeTipoDePieza(ksq, cPieza.REY)&target;
-        while(b != 0)
+        if(cTypes.IsCasillaOcupable(ksq))
         {
-          type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(ksq) == false && pos.IsObstaculo(to) == false)
-            mlist[mPos++].m = cTypes.CreaMov(ksq, to);
+          bitbrd b = pos.AtaquesDesdeTipoDePieza(ksq, cPieza.REY) & target;
+          while(b != 0)
+          {
+            type to = cBitBoard.GetLSB(ref b);
+            if(pos.IsObstaculo(ksq, false) == false && pos.IsObstaculo(to, true) == false)
+              mlist[mPos++].m = cTypes.CreaMov(ksq, to);
+          }
         }
       }
 
@@ -347,7 +353,7 @@ namespace Motor
       while(b != 0)
       {
         type to = cBitBoard.GetLSB(ref b);
-        if(pos.IsObstaculo(ksq) == false && pos.IsObstaculo(to) == false)
+        if(pos.IsObstaculo(ksq, false) == false && pos.IsObstaculo(to, true) == false)
           mlist[mPos++].m = cTypes.CreaMov(ksq, to);
       }
 
@@ -367,13 +373,17 @@ namespace Motor
       int end, cur = mPos;
       bitbrd pinned = pos.PiezasClavadas(pos.ColorMueve());
       sq ksq = pos.GetRey(pos.ColorMueve());
-
-      //-- Si es jaque evasiones, sino generar capturas. El final es una captura
-      end=pos.Jaques()!=0 ? Evasiones(pos, mlist, mPos) : Generar(pos, mlist, mPos, cMovType.NON_EVASIONS);
+      if(cTypes.IsCasillaOcupable(ksq))
+      {
+        //-- Si es jaque evasiones, sino generar capturas. El final es una captura
+        end = pos.Jaques() != 0 ? Evasiones(pos, mlist, mPos) : Generar(pos, mlist, mPos, cMovType.NON_EVASIONS);
+      }
+      else
+        end = Generar(pos, mlist, mPos, cMovType.NON_EVASIONS);
 
       while(cur != end)
       {
-        if(pos.IsObstaculo(end) == true || pos.IsObstaculo(cur) == true)
+        if(pos.IsObstaculo(end, true) == true || pos.IsObstaculo(cur, false) == true)
           mlist[cur].m = mlist[--end].m;
         else if((pinned != 0 || cTypes.GetFromCasilla(mlist[cur].m) == ksq || cTypes.TipoMovimiento(mlist[cur].m) == cMovType.ENPASO)
             && pos.IsLegalMov(mlist[cur].m, pinned) == false)
@@ -409,7 +419,7 @@ namespace Motor
         while(b != 0)
         {
           type to = cBitBoard.GetLSB(ref b);
-          if(pos.IsObstaculo(from) == false && pos.IsObstaculo(to) == false)
+          if(pos.IsObstaculo(from, false) == false && pos.IsObstaculo(to, true) == false)
             mlist[mPos++].m = cTypes.CreaMov(from, to);
         }
       }
