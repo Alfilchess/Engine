@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Threading;
-using System.Collections.Generic;
-using InOut;
-using Types;
+using Finales;
 
 using ply = System.Int32;
 using val = System.Int32;
@@ -14,117 +11,9 @@ namespace Motor
   //------------------------------------------------------------------------------------------
   public struct cSignal
   {
-    public volatile bool STOP, STOP_ON_PONDER, FIRST_MOVE, FAILED;
+    public bool STOP, STOP_ON_PONDER, FIRST_MOVE, FAILED;
   };
-
-  //------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------
-  public static class cThreadUtils
-  {
-    const int TIME_WAIT = 5;
-
-    //------------------------------------------------------------------------------------------
-    public static void Bloquear(object bloqueo)
-    {
-      if (Monitor.TryEnter(bloqueo) == false)
-        Monitor.Enter(bloqueo);
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static void Liberar(object bloqueo)
-    {
-      System.Threading.Monitor.Exit(bloqueo);
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static void Signal(object sleepCond)
-    {
-      lock (sleepCond)
-      {
-        Monitor.Pulse(sleepCond);
-      }
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static void Wait(object sleepCond, object sleepLock)
-    {
-      Liberar(sleepLock);
-      lock (sleepCond)
-      {
-        //--  Si se disminuye puede provocar que durante el ReadLine coja mucha cpu esperando
-        Monitor.Wait(sleepCond, TIME_WAIT);
-      }
-      Bloquear(sleepLock);
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static void Wait(object sleepCond, object sleepLock, int msec)
-    {
-      Liberar(sleepLock);
-      lock (sleepCond)
-      {
-        Monitor.Wait(sleepCond, msec);
-      }
-      Bloquear(sleepLock);
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static bool Create(out System.Threading.Thread handle, ParameterizedThreadStart rutina, cThreadBase thread)
-    {
-      handle = new System.Threading.Thread(rutina);
-
-      handle.IsBackground = false;
-      //handle.Priority = ThreadPriority.Highest;
-
-      handle.Start(thread);
-      return true;
-    }
-  }
-
-  //------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------
-  public class BitSet
-  {
-    private bool[] bits;
-    private int dim;
-
-    //------------------------------------------------------------------------------------------
-    public BitSet(int nDim)
-    {
-      bits = new bool[nDim];
-      dim = nDim;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public bool this[int i]
-    {
-      get
-      {
-        return bits[i];
-      }
-      set
-      {
-        bits[i] = value;
-      }
-    }
-
-    //------------------------------------------------------------------------------------------
-    public bool none()
-    {
-      for (int i = 0; i < dim; i++)
-        if (bits[i])
-          return false;
-
-      return true;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void SetAll(bool val)
-    {
-      for (int i = 0; i < dim; i++)
-        bits[i] = val;
-    }
-  }
+  
 
   //------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------
@@ -145,7 +34,7 @@ namespace Motor
   public class cSplitPoint
   {
     public cPosicion pos;
-    public cStackMov[] ss;
+    public cPilaMov[] ss;
     public int ssPos;
     public cThread masterThread;
     public ply depth;
@@ -153,30 +42,30 @@ namespace Motor
     public int nodeType;
     public bool cutNode;
 
-    public cMovOrder movePicker;
+    public cListaOrdenadaMov movePicker;
     public cSplitPoint parentSplitPoint;
 
     public cExclusionMutua mutex = new cExclusionMutua();
     public BitSet slavesMask = new BitSet(cThreadPool.MAX_THREADS);
-    public volatile bool allSlavesSearching;
-    public volatile UInt32 nodes;
-    public volatile val alpha;
-    public volatile val bestValue;
-    public volatile mov bestMove;
-    public volatile int moveCount;
-    public volatile bool m_bCorte;
+    public bool allSlavesSearching;
+    public UInt32 nodes;
+    public val alpha;
+    public val bestValue;
+    public mov bestMove;
+    public int moveCount;
+    public bool m_bCorte;
   }
 
   //------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------
   public partial class cThreadBase
   {
-    public const int MAX_SPLITPOINTS_PER_THREAD = 16;
+    public static int MAX_SPLITPOINTS_PER_THREAD = 16;// Environment.ProcessorCount;
 
     public cExclusionMutua mutex;
     public cExclusionMutua sleepCondition;
     public System.Threading.Thread handle;
-    public volatile bool exit;
+    public bool exit;
 
     public cThreadBase()
     {
@@ -208,14 +97,14 @@ namespace Motor
   {
     public cSplitPoint[] m_SplitPoints = new cSplitPoint[MAX_SPLITPOINTS_PER_THREAD];
     public cMaterial.cTablaHashMaterial m_Material = new cMaterial.cTablaHashMaterial();
-    public cFinales m_Finales = new cFinales();
+    public cListaDeFinales m_Finales = null;//new cListaDeFinales();
     public cBonusPeones.cHashPeones m_TablaPeones = new cBonusPeones.cHashPeones();
     public cPosicion m_posActiva;
     public int idx;
     public int m_nMaxPly;
-    public volatile cSplitPoint m_SplitPointActivo;
-    public volatile int m_nSplitPointSize;
-    public volatile bool m_bBuscando;
+    public cSplitPoint m_SplitPointActivo;
+    public int m_nSplitPointSize;
+    public bool m_bBuscando;
 
     //------------------------------------------------------------------------------------------
     public cThread() : base()
@@ -252,8 +141,8 @@ namespace Motor
     }
 
     //------------------------------------------------------------------------------------------
-    public void Split(cPosicion pos, cStackMov[] ss, int ssPos, val alpha, val beta, ref val bestValue, ref mov bestMove, ply depth, int moveCount,
-                               cMovOrder movePicker, int nodeType, bool cutNode)
+    public void Split(cPosicion pos, cPilaMov[] ss, int ssPos, val alpha, val beta, ref val bestValue, ref mov bestMove, ply depth, int moveCount,
+                               cListaOrdenadaMov movePicker, int nodeType, bool cutNode)
     {
       cSplitPoint sp = m_SplitPoints[m_nSplitPointSize];
 
@@ -349,10 +238,10 @@ namespace Motor
           cMotor.m_Threads.mutex.Bloquear();
           cSplitPoint sp = m_SplitPointActivo;
           cMotor.m_Threads.mutex.Liberar();
-          cStackMov[] stack = new cStackMov[cSearch.MAX_PLY_PLUS_6];
+          cPilaMov[] stack = new cPilaMov[cSearch.MAX_PLY_PLUS_6];
           int ss = 2;
           for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
-            stack[i] = new cStackMov();
+            stack[i] = new cPilaMov();
           cPosicion pos = new cPosicion(sp.pos, this);
           for (int i = sp.ssPos - 2, n = 0; n < 5; n++, i++)
             stack[ss - 2 + n].From(sp.ss[i]);
@@ -360,11 +249,11 @@ namespace Motor
           sp.mutex.Bloquear();
           m_posActiva = pos;
           if (sp.nodeType == cTipoNodo.NO_PV)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.NO_PV, true);
+            cSearch.Buscar(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.NO_PV, true);
           else if (sp.nodeType == cTipoNodo.PV)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.PV, true);
+            cSearch.Buscar(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.PV, true);
           else if (sp.nodeType == cTipoNodo.RAIZ)
-            cSearch.search(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.RAIZ, true);
+            cSearch.Buscar(pos, stack, ss, sp.alpha, sp.beta, sp.depth, sp.cutNode, cTipoNodo.RAIZ, true);
           m_bBuscando = false;
           m_posActiva = null;
           sp.slavesMask[idx] = false;
@@ -429,7 +318,7 @@ namespace Motor
   //------------------------------------------------------------------------------------------
   public class cMainThread : cThread
   {
-    new public volatile bool m_bBuscando;
+    new public bool m_bBuscando;
 
     //------------------------------------------------------------------------------------------
     public cMainThread()
@@ -460,7 +349,7 @@ namespace Motor
 
         m_bBuscando = true;
 
-        cSearch.think();
+        cSearch.Busqueda();
 
         m_bBuscando = false;
       }
@@ -471,162 +360,13 @@ namespace Motor
     {
       base.OnIdle();
     }
-  }
-
-  //------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------
-  public class cThreadPool : List<cThread>
-  {
-    //--  Máximo de 16 procesadores
-    public const int MAX_THREADS = 16;
-
-    public ply minimumSplitDepth = 0;
-    public cExclusionMutua mutex = new cExclusionMutua();
-    public cExclusionMutua sleepCondition = new cExclusionMutua();
-    public cRelojThread m_RelojThread;
 
     //------------------------------------------------------------------------------------------
-    public cMainThread Principal() { return (cMainThread)this[0]; }
-
-    //------------------------------------------------------------------------------------------
-    public static void Rutina(Object th)
+    public void Abort()
     {
-      ((cThreadBase)th).OnIdle();
-
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static cThread NewThread()
-    {
-      cThread th = new cThread();
-      cThreadUtils.Create(out th.handle, cThreadPool.Rutina, th);
-
-      return th;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static cRelojThread NewThreadReloj()
-    {
-      cRelojThread th = new cRelojThread();
-      cThreadUtils.Create(out th.handle, cThreadPool.Rutina, th);
-      th.handle.IsBackground = true;
-
-      return th;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static cMainThread NewMainThread()
-    {
-      cMainThread th = new cMainThread();
-      cThreadUtils.Create(out th.handle, cThreadPool.Rutina, th);
-      return th;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void delete_thread(cThreadBase th)
-    {
-      th.exit = true;
-      th.Signal();
-      th.handle.Join();
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void Init()
-    {
-      m_RelojThread = NewThreadReloj();
-      Add(NewMainThread());
-      ReadUCIThreads();
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void Close()
-    {
-      delete_thread(m_RelojThread);
-
-      foreach (cThread it in this)
-        delete_thread(it);
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void ReadUCIThreads()
-    {
-      int nThreads = cMotor.m_mapConfig["Threads"].Get();
-
-      if (minimumSplitDepth == 0)
-        minimumSplitDepth = nThreads < 16 ? 8 * cPly.ONE_PLY : 15 * cPly.ONE_PLY;
-
-      while (Count < nThreads)
-      {
-        Add(NewThread());
-      }
-
-      while (Count > nThreads)
-      {
-        delete_thread(this[Count - 1]);
-        RemoveAt(Count - 1);
-      }
-    }
-
-    //------------------------------------------------------------------------------------------
-    public cThread SlaveDisponible(cThread master)
-    {
-      foreach (cThread it in this)
-        if (it.Disponible(master))
-          return it;
-
-      return null;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void WaitAnalizando()
-    {
-      cMainThread t = (cMainThread)Principal();
-      t.mutex.Bloquear();
-      while (t.m_bBuscando) sleepCondition.Wait(t.mutex);
-      t.mutex.Liberar();
-    }
-
-    //------------------------------------------------------------------------------------------
-    public static bool IsSearching(List<mov> moves, mov m)
-    {
-      int moveLength = moves.Count;
-      if (moveLength == 0)
-        return false;
-      for (int i = 0; i < moveLength; i++)
-      {
-        if (moves[i] == m)
-          return true;
-      }
-      return false;
-    }
-
-    //------------------------------------------------------------------------------------------
-    public void Analizando(cPosicion pos, cControlReloj limits, Stack<cPosInfo> states)
-    {
-      WaitAnalizando();
-
-      cSearch.SearchTime = cReloj.Now();
-
-      cSearch.Signals.STOP_ON_PONDER = cSearch.Signals.FIRST_MOVE = false;
-      cSearch.Signals.STOP = cSearch.Signals.FAILED = false;
-
-      cSearch.RootMoves.Clear();
-      cSearch.RootPos = pos;
-      cSearch.Limits = limits;
-
-      if (states.Count > 0)
-      {
-        cSearch.SetupStates = states;
-
-      }
-
-      for (cReglas it = new cReglas(pos, cMovType.LEGAL); it.GetActualMov() != 0; ++it)
-        if (limits.searchmoves.Count == 0
-            || IsSearching(limits.searchmoves, it.GetActualMov()))
-          cSearch.RootMoves.Add(new cRaizMov(it.GetActualMov()));
-
-      Principal().m_bBuscando = true;
-      Principal().Signal();
+      cSearch.m_Sennales.STOP = true;
+      Signal();
     }
   }
+
 }

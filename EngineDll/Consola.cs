@@ -22,6 +22,7 @@ namespace InOut
     private TextWriter m_Out;
     private Action<string> m_CallBackFunction = null;
     private string m_strCallBackString = "";
+    public bool m_bInTest = false;
 
     public void SetDelegateFunction(Action<string> callBackFunction)
     {
@@ -121,12 +122,15 @@ namespace InOut
     }
 
     //-----------------------------------------------------------------------------------
-    public void PrintLine(string cad, AccionConsola accion)
+    public void PrintLine(string cad, AccionConsola accion, bool bTest = false)
     {
-      if(m_CallBackFunction != null)
-        Print(cad, accion);
-      else
-        Print(cad + cTypes.LF, accion);
+      if (bTest == false && cad.Length > 0)
+      {
+        if (m_CallBackFunction != null)
+          Print(cad, accion);
+        else
+          Print(cad + cTypes.LF, accion);
+      }
     }
   }
 }

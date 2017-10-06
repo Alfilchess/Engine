@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Runtime.CompilerServices;
 using Types;
 using Motor;
+using Finales;
 
 using mov = System.Int32;
 using val = System.Int32;
 using sq = System.Int32;
+
 using System.Diagnostics;
 
 namespace InOut
@@ -47,7 +48,7 @@ namespace InOut
       sq to = cTypes.GetToCasilla(m);
 
       if (m == cMovType.MOV_NAN)
-        return "(none)";
+        return "none";
 
       if (m == cMovType.MOV_NULO)
         return "0000";
@@ -73,10 +74,14 @@ namespace InOut
         str = new String(strChar);
       }
 
+      if (str == "0000")
+        return cMovType.MOV_NULO;
+
       for (cReglas it = new cReglas(pos, cMovType.LEGAL); it.GetActualMov() != cMovType.MOV_NAN; ++it)
         if (str == GetMovimiento(it.GetActualMov(), pos.IsChess960() != false))
           return it.GetActualMov();
 
+      cMotor.m_Consola.PrintLine("Movimiento incorrecto: " + str, AccionConsola.ATOMIC);
       return cMovType.MOV_NAN;
     }
 
@@ -86,14 +91,18 @@ namespace InOut
       config.Clear();
 
       config["Threads"] = new cOptConfig("Threads", config.Count, 1, 1, cThreadPool.MAX_THREADS, cOptConfig.OnThread, true, false);
-      config["Hash"] = new cOptConfig("Hash", config.Count, 128, 1, 4096, cOptConfig.OnHash, true, false);
+      config["Hash"] = new cOptConfig("Hash", config.Count, 64, 1, 4096, cOptConfig.OnHash, true, false);
       config["Clear Hash"] = new cOptConfig("Clear Hash", config.Count, cOptConfig.OnClearHash, true);
       config["Ponder"] = new cOptConfig("Ponder", config.Count, false, null, true);
       config["Log"] = new cOptConfig("Log", config.Count, false, null, true);
-      config["OwnBook"] = new cOptConfig("OwnBook", config.Count, true, null, true);
-      config["MultiPV"] = new cOptConfig("MultiPV", config.Count, 1, 1, 3, null, true, false);
+      config["OwnBook"] = new cOptConfig("OwnBook", config.Count, false, null, true);
+      config["MultiPV"] = new cOptConfig("MultiPV", config.Count, 1, 1, 50, null, true, false);
+      config["GaviotaTbPath"] = new cOptConfig("GaviotaTbPath", config.Count, "./gtb", null, true);
       config["UCI_Chess960"] = new cOptConfig("UCI_Chess960", config.Count, false, null, true);
+      config["LevelELO"] = new cOptConfig("LevelELO", config.Count, false, null, true);
       config["Level"] = new cOptConfig("Level", config.Count, 16, 1, 16, cOptConfig.OnLevel, true, false);
+      config["LevelFilterK"] = new cOptConfig("LevelFilterK", config.Count, "-0,2", null, true);
+      config["LevelFilterC"] = new cOptConfig("LevelFilterC", config.Count, "0,1", null, true);
       config["UCI_EngineAbout"] = new cOptConfig("UCI_EngineAbout", config.Count, "www.alfilchess.com", null, true);
       config["UCI_LimitStrength"] = new cOptConfig("UCI_LimitStrength", config.Count, false, null, true);
       config["UCI_Elo"] = new cOptConfig("UCI_Elo", config.Count, 3000, 200, 3000, cOptConfig.OnElo, true, false);
@@ -119,7 +128,7 @@ namespace InOut
       config["DAMA_VALOR_MEDIO_JUEGO"] = new cOptConfig("DAMA_VALOR_MEDIO_JUEGO", config.Count, 84, 0, 3000, null, false, true);
       config["DAMA_VALOR_FINAL"] = new cOptConfig("DAMA_VALOR_FINAL", config.Count, 85, 0, 3000, null, false, true);
       config["MEDIO_JUEGO"] = new cOptConfig("MEDIO_JUEGO", config.Count, 50, 0, cValoresJuego.MATE, null, false, true);
-      config["FINAL"] = new cOptConfig("FINAL", config.Count, 12, 0, cValoresJuego.MATE, null, false, true);
+      config["FINAL"] = new cOptConfig("FINAL", config.Count, 12, 0, cValoresJuego.MATE, null, false, true); //12
 
       config["PROFUNDIDAD_DE_FRACTURA"] = new cOptConfig("PROFUNDIDAD_DE_FRACTURA", config.Count, 17, 0, 12, cOptConfig.OnThread, false, true); //16.6//2
       config["FACTOR_CONTENCION"] = new cOptConfig("FACTOR_CONTENCION", config.Count, 50, -50, 50, null, false, true);
@@ -153,13 +162,17 @@ namespace InOut
       else
         return;
 
-      posicion.SetFEN(fen, cMotor.m_mapConfig["UCI_Chess960"].Get() != 0 ? true : false, cMotor.m_Threads.Principal());
+      if (fen.Length > 80)
+        posicion.SetFENChessaria(fen, cMotor.m_mapConfig["UCI_Chess960"].Get() != 0 ? true : false, cMotor.m_Threads.Principal());
+      else
+        posicion.SetFEN(fen, cMotor.m_mapConfig["UCI_Chess960"].Get() != 0 ? true : false, cMotor.m_Threads.Principal());
+
       SetupStates = new Stack<cPosInfo>();
 
       while ((lista.Count > 0) && (m = cUci.GetFromUCI(posicion, token = lista.Pop())) != cMovType.MOV_NAN)
       {
         SetupStates.Push(new cPosInfo());
-        posicion.DoMov(m, SetupStates.Peek());
+        posicion.DoMov(m, SetupStates.Peek(), true);
       }
     }
 
@@ -177,6 +190,7 @@ namespace InOut
         value += (value == null ? string.Empty : " ") + token;
 
       name = name.Trim();
+      value = value.Trim();
       if (!String.IsNullOrEmpty(name) && cMotor.m_mapConfig.ContainsKey(name))
         cMotor.m_mapConfig[name].setCurrentValue(value);
       else
@@ -188,67 +202,57 @@ namespace InOut
     {
       cControlReloj control = new cControlReloj();
 
+
       string token = string.Empty;
 
       while (lista_valores.Count > 0)
       {
         token = lista_valores.Pop();
-        if(token == "searchmoves")
+        if (token == "searchmoves")
         {
-          while(lista_valores.Count > 0 && (token = lista_valores.Pop()) != null)
-            control.searchmoves.Add(cUci.GetFromUCI(pos, token)); 
+          while (lista_valores.Count > 0 && (token = lista_valores.Pop()) != null)
+            control.searchmoves.Add(cUci.GetFromUCI(pos, token));
         }
-
-        else if(token == "wtime")
+        else if (token == "wtime")
           control.time[cColor.BLANCO] = int.Parse(lista_valores.Pop());
-        else if(token == "btime")
+        else if (token == "btime")
           control.time[cColor.NEGRO] = int.Parse(lista_valores.Pop());
-        else if(token == "winc")
+        else if (token == "winc")
           control.inc[cColor.BLANCO] = int.Parse(lista_valores.Pop());
-        else if(token == "binc")
+        else if (token == "binc")
           control.inc[cColor.NEGRO] = int.Parse(lista_valores.Pop());
-        else if(token == "movestogo")
+        else if (token == "movestogo")
           control.movestogo = int.Parse(lista_valores.Pop());
-        else if(token == "depth")
+        else if (token == "depth")
           control.depth = int.Parse(lista_valores.Pop());
-        else if(token == "nodes")
+        else if (token == "nodes")
           control.nodes = int.Parse(lista_valores.Pop());
-        else if(token == "movetime")
+        else if (token == "movetime")
           control.movetime = int.Parse(lista_valores.Pop());
-        else if(token == "mate")
+        else if (token == "mate")
           control.mate = int.Parse(lista_valores.Pop());
-        else if(token == "infinite")
+        else if (token == "infinite")
           control.infinite = 1;
-        else if(token == "ponder")
+        else if (token == "ponder")
           control.ponder = 1;
       }
 
-#if CHESSARIA_TEST
-      //pos.SetWall(cCasilla.A3);
-      //pos.SetWall(cCasilla.A5);
-      pos.SetTesoro(cCasilla.A4, cColor.BLANCO);
-      pos.SetObstaculo(cCasilla.B4);
-      pos.SetObstaculo(cCasilla.C4);
-      pos.SetWall   (cCasilla.D4);
-      pos.SetWall   (cCasilla.E4);
-      pos.SetObstaculo(cCasilla.F4);
-      pos.SetObstaculo(cCasilla.G4);
-      pos.SetTesoro(cCasilla.H4, cColor.NEGRO);
-      //pos.SetWall(cCasilla.H3);
-      //pos.SetWall(cCasilla.H5);
-#endif
+      cFinalesBase.m_nTBHits = 0;
       try
       {
+
+
+
         cMotor.m_Threads.Analizando(pos, control, SetupStates);
       }
-      catch(Exception ex)
+      catch (Exception ex)
       {
-#if DEBUG
         Debug.Print(ex.Message);
-#endif
+        cMotor.m_Consola.Print(ex.Message, AccionConsola.NADA);
       }
-      
+
     }
+
 
     //---------------------------------------------------------------------------------
     public static Stack<string> CreateStack(string input)
@@ -279,7 +283,7 @@ namespace InOut
       {
         if (opt.m_bUCI == true)
         {
-          
+
           sb.Append("option name ").Append(opt.m_nNombre).Append(" type ").Append(opt.m_strTipo);
           if (opt.m_strTipo != "button")
             sb.Append(" default ").Append(opt.m_strDefecto);
@@ -299,50 +303,53 @@ namespace InOut
 
       try
       {
-        do
+        //do
         {
           Stack<string> stack = CreateStack(cmd);
           token = stack.Pop();
 
-          if(token == "quit" || token == "stop" || token == "ponderhit")
+          if (token == "quit" || token == "stop" || token == "ponderhit")
           {
-            if(token != "ponderhit" || cSearch.Signals.STOP_ON_PONDER)
+            if (token != "ponderhit" || cSearch.m_Sennales.STOP_ON_PONDER)
             {
-              cSearch.Signals.STOP = true;
-              cMotor.m_Threads.Principal().Signal();
+              cMotor.m_Threads.Principal().Abort();
             }
             else
-              cSearch.Limits.ponder = 0;
+              cSearch.m_Limites.ponder = 0;
           }
-          else if(token == "uci")
+          else if (token == "uci")
           {
             cMotor.m_Consola.PrintLine("id name " + cMotor.Info(), AccionConsola.ATOMIC);
             cMotor.m_Consola.PrintLine(ShowOption(cMotor.m_mapConfig), AccionConsola.ATOMIC);
             cMotor.m_Consola.PrintLine("uciok", AccionConsola.ATOMIC);
           }
-          else if(token == "go")
+          else if (token == "go")
             GoUCI(pos, stack);
-          else if(token == "position")
+          else if (token == "position")
             SetPosicion(pos, stack);
-          else if(token == "setoption")
+          else if (token == "setoption")
             SetOption(stack);
-          else if(token == "test")
-            cMotor.Test();
-          else if(token == "isready")
+          else if (token == "elo")
+            cMotor.Elo();
+          else if (token == "chessariatest")
+            cMotor.ChessariaTest();
+          else if (token == "isready")
             cMotor.m_Consola.PrintLine("readyok", AccionConsola.ATOMIC);
-          else if(token == "ucinewgame")
+          else if (token == "ucinewgame")
+          {
             cMotor.m_TablaHash.Clear();
+          }
           else
             cMotor.m_Consola.PrintLine("Comando desconocido: " + cmd, AccionConsola.ATOMIC);
 
-        } while(token != "quit" && cmd.Length == 0);
-      
+        }
+        //while (token != "quit" && cmd.Length == 0);
+
       }
-      catch(Exception ex)
+      catch (Exception ex)
       {
-#if DEBUG
         Debug.Write(ex.Message);
-#endif
+        cMotor.m_Consola.Print("Exception: " + ex.Message, AccionConsola.NADA);
       }
     }
 
@@ -350,8 +357,6 @@ namespace InOut
     public void Recibir(String[] argv)
     {
       cPosicion pos = new cPosicion("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, cMotor.m_Threads.Principal());
-      //cPosicion pos = new cPosicion("8/8/3N1K2/8/1B6/4k3/8/8 w - - 1 78 ", false, cMotor.m_Threads.Principal());
-
 
       string token = "", cmd = "";
 
@@ -368,13 +373,13 @@ namespace InOut
 
         if (token == "quit" || token == "stop" || token == "ponderhit")
         {
-          if (token != "ponderhit" || cSearch.Signals.STOP_ON_PONDER)
+          if (token != "ponderhit" || cSearch.m_Sennales.STOP_ON_PONDER)
           {
-            cSearch.Signals.STOP = true;
+            cSearch.m_Sennales.STOP = true;
             cMotor.m_Threads.Principal().Signal();
           }
           else
-            cSearch.Limits.ponder = 0;
+            cSearch.m_Limites.ponder = 0;
         }
         else if (token == "uci")
         {
@@ -388,12 +393,16 @@ namespace InOut
           SetPosicion(pos, stack);
         else if (token == "setoption")
           SetOption(stack);
-        else if (token == "test")
-          cMotor.Test();
+        else if (token == "elo")
+          cMotor.Elo();
+        else if (token == "chessariatest")
+          cMotor.ChessariaTest();
         else if (token == "isready")
           cMotor.m_Consola.PrintLine("readyok", AccionConsola.ATOMIC);
         else if (token == "ucinewgame")
           cMotor.m_TablaHash.Clear();
+        else if (token == "draw")
+          cMotor.m_Consola.PrintLine(pos.DibujaTablero(), AccionConsola.ATOMIC);
         else
           cMotor.m_Consola.PrintLine("Comando desconocido: " + cmd, AccionConsola.ATOMIC);
 

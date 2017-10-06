@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Text;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Motor;
 using Types;
 
@@ -99,7 +96,7 @@ namespace InOut
   {
     public bool m_bRunning = false;
 
-    private const int TIME_WAIT_RELOJ = 100;
+    private const int TIME_WAIT_RELOJ = 1000;
 
     private static long m_nLastTime = -1;
 
@@ -115,9 +112,9 @@ namespace InOut
       if (cReloj.Now() - m_nLastTime >= 100)
         m_nLastTime = cReloj.Now();
 
-      if (cSearch.Limits.ponder == 0)
+      if (cSearch.m_Limites.ponder == 0)
       {
-        if (cSearch.Limits.nodes != 0)
+        if (cSearch.m_Limites.nodes != 0)
         {
           cMotor.m_Threads.mutex.Bloquear();
 
@@ -145,13 +142,16 @@ namespace InOut
         }
         
         Int64 nTiempoTranscurrido = cReloj.Now() - cSearch.SearchTime;
-        bool stillAtFirstMove = cSearch.Signals.FIRST_MOVE && !cSearch.Signals.FAILED && nTiempoTranscurrido > cSearch.TimeMgr.Disponible() * 75 / 100;
+        bool stillAtFirstMove = cSearch.m_Sennales.FIRST_MOVE && !cSearch.m_Sennales.FAILED && nTiempoTranscurrido > cSearch.m_ControlReloj.Disponible() * 75 / 100;
 
-        bool noMoreTime = (nTiempoTranscurrido > cSearch.TimeMgr.Maximo() - (2 * cRelojThread.TIME_WAIT_RELOJ)) || stillAtFirstMove;
+        bool noMoreTime = (nTiempoTranscurrido > cSearch.m_ControlReloj.Maximo() - (2 * cRelojThread.TIME_WAIT_RELOJ)) || stillAtFirstMove;
 
-        if ((cSearch.Limits.ControlDeTiempoDefinido() && noMoreTime) || (cSearch.Limits.movetime != 0 && nTiempoTranscurrido >= cSearch.Limits.movetime)
-          || (cSearch.Limits.nodes != 0 && nNodos >= cSearch.Limits.nodes))
-          cSearch.Signals.STOP = true;
+        if ((cSearch.m_Limites.ControlDeTiempoDefinido() && noMoreTime) )
+          cSearch.m_Sennales.STOP = true;
+          if((cSearch.m_Limites.movetime != 0 && nTiempoTranscurrido >= cSearch.m_Limites.movetime))
+          cSearch.m_Sennales.STOP = true;
+          if ((cSearch.m_Limites.nodes != 0 && nNodos >= cSearch.m_Limites.nodes))
+          cSearch.m_Sennales.STOP = true;
       }
     }
 
@@ -167,10 +167,12 @@ namespace InOut
           sleepCondition.Wait(mutex, m_bRunning ? TIME_WAIT_RELOJ : Int32.MaxValue);
         }
 
-        mutex.Liberar();
-
         if (m_bRunning)
           Check();
+
+        mutex.Liberar();
+
+        
       }
     }
   }
