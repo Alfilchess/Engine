@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Text;
+using System.Runtime.CompilerServices;
 using Types;
 
 using bitbrd = System.UInt64;
@@ -134,8 +137,6 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public static int Distancia(sq s1, sq s2)
     {
-      if (s2 >= cCasilla.ESCAQUES || s1 >= cCasilla.ESCAQUES)
-        return 0;
       return cBitBoard.SquareDistance[s1][s2];
     }
 
@@ -397,7 +398,7 @@ namespace Motor
                 m_Ataques[cTypes.CreaPieza(c, pt)][s] |= m_nCasillas[to];
             }
 
-       
+
       sq[] RDeltas = new sq[] { cCasilla.NORTE, cCasilla.ESTE, cCasilla.SUR, cCasilla.OESTE };
       sq[] BDeltas = new sq[] { cCasilla.NORTE_ESTE, cCasilla.SUR_ESTE, cCasilla.SUR_OESTE, cCasilla.NORTE_OESTE };
 
@@ -459,7 +460,7 @@ namespace Motor
 		   		new int[] { 3101,  552, 3555,  926,  834,   26, 2131, 1117 } 
 			};
 
-      cAleatorio rk = new cAleatorio();
+      cAleatorio rk = new cAleatorio((int)(InOut.cReloj.Now() % 1000));
       bitbrd[] occupancy = new UInt64[4096], reference = new UInt64[4096];
       bitbrd edges, b;
       int i, size, booster;

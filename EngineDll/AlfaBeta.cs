@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using InOut;
 using Types;
 using hash = System.UInt64;
@@ -9,35 +10,145 @@ using val = System.Int32;
 using color = System.Int32;
 using NodeType = System.Int32;
 using sq = System.Int32;
-using pnt = System.Int32;
+using System.IO;
 using Book;
 using System.Diagnostics;
 
 namespace Motor
 {
-  public static class cSearch
+  //-----------------------------------------------------------------------------------
+  public struct cTipoNodo
   {
-    public static float m_nFilterK = -.2f, m_nFilterC = .1f;
-    public const int MAX_PLY = 60;//120
+    public const int RAIZ = 0, PV = 1, NO_PV = 2;
+  };
+
+  //-----------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------
+  public class cRaizMov
+  {
+    public val m_nVal;
+    public val m_LastVal;
+    public List<mov> m_PV = new List<mov>();
+    public cRaizMov(mov m)
+    {
+      m_nVal = m_LastVal = -cValoresJuego.INFINITO;
+      m_PV.Add(m);
+      m_PV.Add(cMovType.MOV_NAN);
+    }
+    
+    public static void Ordenar(List<cRaizMov> data, int firstMove, int lastMove)
+    {
+      cRaizMov tmp;
+      int p, q;
+
+      for (p = firstMove + 1; p < lastMove; p++)
+      {
+        tmp = data[p];
+        for (q = p; q != firstMove && data[q - 1].m_nVal < tmp.m_nVal; --q)
+          data[q] = data[q - 1];
+        data[q] = tmp;
+      }
+    }      
+/*
+    //------------------------------------------------------------------------------------------------
+    public static void Ordenar(List<cRaizMov> data, int left, int right)
+    {
+      int i = left - 1,
+      j = right;
+
+      while (true)
+      {
+        int d = data[left].m_nVal;
+        do i++; while (data[i].m_nVal > d);
+        do j--; while (data[j].m_nVal < d);
+
+        if (i < j) 
+        {
+          cRaizMov tmp = data[i];
+          data[i] = data[j];
+          data[j] = tmp;
+        }
+        else
+        {
+          if (left < j)    Ordenar(data, left, j);
+          if (++j < right) Ordenar(data, j, right);
+          return;
+        }
+      }
+    }
+    */
+
+    public void extract_pv_from_tt(cPosicion pos)
+    {
+      cPosInfo[] estate = new cPosInfo[cSearch.MAX_PLY_PLUS_6];
+      for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
+        estate[i] = new cPosInfo();
+      cTablaHashStruct tte;
+      int st = 0;
+      int ply = 1;
+      mov m = m_PV[0];
+      val expectedScore = m_nVal;
+      m_PV.Clear();
+      do
+      {
+        m_PV.Add(m);
+        pos.DoMov(m_PV[ply++ - 1], estate[st++]);
+        tte = cMotor.m_TablaHash.Buscar(pos.ClaveHash());
+        expectedScore = -expectedScore;
+      } while (tte != null
+          && expectedScore == cSearch.value_from_tt(tte.GetValue(), ply)
+          && pos.IsPseudoLegalMov(m = tte.GetMove())
+          && pos.IsLegalMov(m, pos.PiezasClavadas(pos.ColorMueve()))
+          && ply < cSearch.MAX_PLY
+          && (!pos.IsTablas() || ply <= 2));
+      m_PV.Add(cMovType.MOV_NAN);
+      while (--ply != 0)
+        pos.DesMov(m_PV[ply - 1]);
+    }
+
+    public void insert_pv_in_tt(cPosicion pos)
+    {
+      cPosInfo[] state = new cPosInfo[cSearch.MAX_PLY_PLUS_6];
+      int st = 0;
+      for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
+        state[i] = new cPosInfo();
+      cTablaHashStruct tte;
+      int idx = 0;
+      do
+      {
+        tte = cMotor.m_TablaHash.Buscar(pos.ClaveHash());
+        if (tte == null || tte.GetMove() != m_PV[idx])
+          cMotor.m_TablaHash.Save(pos.ClaveHash(), cValoresJuego.NAN, cBordes.BOUND_NONE, cPly.DEPTH_NONE, m_PV[idx], cValoresJuego.NAN);
+        pos.DoMov(m_PV[idx++], state[st++]);
+      } while (m_PV[idx] != cMovType.MOV_NAN);
+      while (idx != 0)
+        pos.DesMov(m_PV[--idx]);
+    }
+  }
+
+
+  public class cSearch
+  {
+    public const int MAX_PLY = 120;
     public const int MAX_PLY_PLUS_6 = MAX_PLY + 6;
-    public static cSignal m_Sennales;
-    public static cControlReloj m_Limites = new cControlReloj();
+    public static cSignal Signals;
+    public static cControlReloj Limits = new cControlReloj();
     public static List<cRaizMov> RootMoves = new List<cRaizMov>();
     public static cPosicion RootPos;
     public static color RootColor;
     public static Int64 SearchTime;
-    public static Stack<cPosInfo> m_PilaEstados = new Stack<cPosInfo>();
+    public static Stack<cPosInfo> SetupStates = new Stack<cPosInfo>();
 
     public static int[][] FutilityMoveCounts = new int[2][] { new int[32], new int[32] };
 
-    public static sbyte[][][][] m_Reducciones = new sbyte[2][][][];
+    public static sbyte[][][][] Reductions = new sbyte[2][][][];
 
-    public static int MultiPV, nIndexPV;
-    public static cReloj m_ControlReloj = new cReloj();
+    public static int MultiPV, PVIdx;
+    public static cReloj TimeMgr = new cReloj();
     public static double BestMoveChanges;
-    public static val[] m_ValorTablas = new val[cColor.SIZE];
-    public static cHistorial m_Historial = new cHistorial();
-    public static cBeneficios m_Beneficios = new cBeneficios();
+    public static val[] DrawValue = new val[cColor.SIZE];
+    public static cHistorial History = new cHistorial();
+    public static cBeneficios Gains = new cBeneficios();
     public static cMovs Countermoves = new cMovs();
     public static cMovs Followupmoves = new cMovs();
 
@@ -45,25 +156,21 @@ namespace Motor
     public static cLibro book = new cLibro();
 #endif
 
-    //-----------------------------------------------------------------------------------------------------
-    public static val Razor_margin(ply d)
+    public static val razor_margin(ply d)
     {
       return 512 + 16 * (int)d;
     }
 
-    //-----------------------------------------------------------------------------------------------------
-    public static val MargenFutilityPrunning(ply d)
+    public static val futility_margin(ply d)
     {
       return (cValoresJuego.PEON_MJ * d);
     }
 
-    //-----------------------------------------------------------------------------------------------------
-    public static ply Reduccion(int i, ply d, int mn, int PvNode)
+    public static ply reduction(int i, ply d, int mn, int PvNode)
     {
-      return (ply)m_Reducciones[PvNode][i][Math.Min((int)d / cPly.ONE_PLY, 63)][Math.Min(mn, 63)];
+      return (ply)Reductions[PvNode][i][Math.Min((int)d / cPly.ONE_PLY, 63)][Math.Min(mn, 63)];
     }
 
-    //-----------------------------------------------------------------------------------------------------
     public static void Init()
     {
       int d;
@@ -71,13 +178,13 @@ namespace Motor
       int mc;
       for (int i = 0; i < 2; i++)
       {
-        m_Reducciones[i] = new sbyte[2][][];
+        Reductions[i] = new sbyte[2][][];
         for (int k = 0; k < 2; k++)
         {
-          m_Reducciones[i][k] = new sbyte[64][];
+          Reductions[i][k] = new sbyte[64][];
           for (int m = 0; m < 64; m++)
           {
-            m_Reducciones[i][k][m] = new sbyte[64];
+            Reductions[i][k][m] = new sbyte[64];
           }
         }
       }
@@ -87,14 +194,14 @@ namespace Motor
         {
           double pvRed = 0.00 + Math.Log((double)hd) * Math.Log((double)mc) / 3.0;
           double nonPVRed = 0.33 + Math.Log((double)hd) * Math.Log((double)mc) / 2.25;
-          m_Reducciones[1][1][hd][mc] = (sbyte)(pvRed >= 1.0 ? Math.Floor(pvRed * (int)cPly.ONE_PLY) : 0);
-          m_Reducciones[0][1][hd][mc] = (sbyte)(nonPVRed >= 1.0 ? Math.Floor(nonPVRed * (int)cPly.ONE_PLY) : 0);
-          m_Reducciones[1][0][hd][mc] = m_Reducciones[1][1][hd][mc];
-          m_Reducciones[0][0][hd][mc] = m_Reducciones[0][1][hd][mc];
-          if (m_Reducciones[0][0][hd][mc] > 2 * cPly.ONE_PLY)
-            m_Reducciones[0][0][hd][mc] += cPly.ONE_PLY;
-          else if (m_Reducciones[0][0][hd][mc] > 1 * cPly.ONE_PLY)
-            m_Reducciones[0][0][hd][mc] += cPly.ONE_PLY / 2;
+          Reductions[1][1][hd][mc] = (sbyte)(pvRed >= 1.0 ? Math.Floor(pvRed * (int)cPly.ONE_PLY) : 0);
+          Reductions[0][1][hd][mc] = (sbyte)(nonPVRed >= 1.0 ? Math.Floor(nonPVRed * (int)cPly.ONE_PLY) : 0);
+          Reductions[1][0][hd][mc] = Reductions[1][1][hd][mc];
+          Reductions[0][0][hd][mc] = Reductions[0][1][hd][mc];
+          if (Reductions[0][0][hd][mc] > 2 * cPly.ONE_PLY)
+            Reductions[0][0][hd][mc] += cPly.ONE_PLY;
+          else if (Reductions[0][0][hd][mc] > 1 * cPly.ONE_PLY)
+            Reductions[0][0][hd][mc] += cPly.ONE_PLY / 2;
         }
 
       for (d = 0; d < 32; ++d)
@@ -104,66 +211,59 @@ namespace Motor
       }
     }
 
-    //-----------------------------------------------------------------------------------------------------
-    public static void Busqueda()
+   
+    public static void think()
     {
       RootColor = RootPos.ColorMueve();
-      m_ControlReloj.Init(m_Limites, RootPos.GetPly(), RootColor);
+      TimeMgr.Init(Limits, RootPos.GetPly(), RootColor);
       int cf = cMotor.m_mapConfig["FACTOR_CONTENCION"].Get() * cValoresJuego.PEON_FINAL / 100;
-
-      m_ValorTablas[RootColor] = cValoresJuego.TABLAS - (cf);
-      m_ValorTablas[cTypes.Contrario(RootColor)] = cValoresJuego.TABLAS + (cf);
-
-      if (RootPos.m_Mission[RootColor].m_nMissionType != cMission.CHECKMATE)
-        m_ValorTablas[RootColor] = -cValoresJuego.GANA - (cf);
-      if (RootPos.m_Mission[cTypes.Contrario(RootColor)].m_nMissionType != cMission.CHECKMATE)
-        m_ValorTablas[cTypes.Contrario(RootColor)] = -cValoresJuego.GANA + (cf);
-
+      DrawValue[RootColor] = cValoresJuego.TABLAS - (cf);
+      DrawValue[cTypes.Contrario(RootColor)] = cValoresJuego.TABLAS + (cf);
       if (RootMoves.Count == 0)
       {
         RootMoves.Add(new cRaizMov(cMovType.MOV_NAN));
-        //cMotor.m_Consola.Print("info depth 0 score ", AccionConsola.GET);
-        //cMotor.m_Consola.Print(cUci.Puntos(RootPos.Jaques() != 0 ? -cValoresJuego.MATE : cValoresJuego.TABLAS, -cValoresJuego.INFINITO, cValoresJuego.INFINITO), AccionConsola.RELEASE);
+        cMotor.m_Consola.Print("info depth 0 score ", AccionConsola.GET);
+        cMotor.m_Consola.Print(cUci.Puntos(RootPos.Jaques() != 0 ? -cValoresJuego.MATE : cValoresJuego.TABLAS, -cValoresJuego.INFINITO, cValoresJuego.INFINITO), AccionConsola.RELEASE);
+        goto finalize;
       }
-      else
-      {
-        bool bBookFound = false;
 #if BOOK
-
-        if (RootPos.m_Mission[RootColor].m_nMissionType == cMission.CHECKMATE && RootPos.HasObstacles() == false)
+      if (cMotor.m_mapConfig.ContainsKey("OwnBook") && cMotor.m_mapConfig["OwnBook"].Get() != 0 && 0 == Limits.infinite && 0 == Limits.mate)
+      {
+        mov bookMove = book.Buscar(RootPos);
+        if (bookMove != 0 && existRootMove(RootMoves, bookMove))
         {
-          if (cMotor.m_mapConfig.ContainsKey("OwnBook") && cMotor.m_mapConfig["OwnBook"].Get() != 0 && 0 == m_Limites.infinite && 0 == m_Limites.mate)
-          {
-            mov bookMove = book.Buscar(RootPos);
-            if (bookMove != 0 && existRootMove(RootMoves, bookMove))
-            {
-              int bestpos = BuscarMov(RootMoves, 0, RootMoves.Count, bookMove);
-              cRaizMov temp = RootMoves[0];
-              RootMoves[0] = RootMoves[bestpos];
-              RootMoves[bestpos] = temp;
-              bBookFound = true;
-            }
-          }
-        }
-#endif
-        if (bBookFound == false)
-        {
-          cMotor.m_TablaHash.m_nHashFull = 0;
-
-          for (int i = 0; i < cMotor.m_Threads.Count; ++i)
-            cMotor.m_Threads[i].m_nMaxPly = 0;
-          cMotor.m_Threads.m_RelojThread.m_bRunning = true;
-          cMotor.m_Threads.m_RelojThread.Signal();
-          BusquedaRecursiva(RootPos);
-          cMotor.m_Threads.m_RelojThread.m_bRunning = false;
+          int bestpos = Buscar(RootMoves, 0, RootMoves.Count, bookMove);
+          cRaizMov temp = RootMoves[0];
+          RootMoves[0] = RootMoves[bestpos];
+          RootMoves[bestpos] = temp;
+          goto finalize;
         }
       }
+#endif
+      cMotor.m_TablaHash.m_nHashFull = 0;
 
-      if (!m_Sennales.STOP && (m_Limites.ponder != 0 || m_Limites.infinite != 0))
+      for (int i = 0; i < cMotor.m_Threads.Count; ++i)
+        cMotor.m_Threads[i].m_nMaxPly = 0;
+      cMotor.m_Threads.m_RelojThread.m_bRunning = true;
+      cMotor.m_Threads.m_RelojThread.Signal();
+      id_loop(RootPos);
+      cMotor.m_Threads.m_RelojThread.m_bRunning = false;
+    finalize:
+
+
+
+
+
+
+
+
+
+
+      if (!Signals.STOP && (Limits.ponder != 0 || Limits.infinite != 0))
       {
-        m_Sennales.STOP_ON_PONDER = true;
+        Signals.STOP_ON_PONDER = true;
 #pragma warning disable 0420
-        RootPos.ThreadActive().Wait(ref m_Sennales.STOP);
+        RootPos.ThreadActive().Wait(ref Signals.STOP);
 #pragma warning restore 0420
       }
 
@@ -174,84 +274,63 @@ namespace Motor
       cMotor.m_Consola.Print(cTypes.LF, AccionConsola.RELEASE);
     }
 
-    //-----------------------------------------------------------------------------------------------------
-    public static mov GetMovFromLevel(int nLevel, bool bChessaria, ref pnt score)
+    public static mov GetLevelMove(int nLevel)
+
     {
-      mov bestMove = cSearch.RootMoves[0].m_PV[0];
-      int nLevelRoot = 0;
+      mov best = cSearch.RootMoves[0].m_PV[0];
+      
+      double percent = ((nLevel+1) * 100) / cConfigFile.MAX_LEVEL;
+      int nMinus = 0;
 
+      foreach(cRaizMov mov in cSearch.RootMoves)
       {
-        double percent = ((nLevel + 1) * 100) / cConfigFile.MAX_LEVEL;
-        int nMinus = 0;
-        int i = 0;
-        foreach (cRaizMov mov in cSearch.RootMoves)
-        {
-
-          bool updated = (i <= cSearch.nIndexPV);
-          val v = (updated ? cSearch.RootMoves[i].m_nVal : cSearch.RootMoves[i].m_LastVal);
-          i++;
-          if (v < (-cValoresJuego.PEON_MJ * (cConfigFile.MAX_LEVEL - nLevel)))
-            break;
-          else
-            nMinus++;
-        }
-
-        Random r = new Random((int)(cReloj.Now() % 1000));
-        int rnext = r.Next(1, cConfigFile.MAX_LEVEL);
-
-        if (rnext > nLevel)
-        {
-          if (nMinus > 0)
-            nLevelRoot = Math.Min(nMinus - (int)Math.Round(((nMinus * (percent / 100.0))), 0), nMinus - 1);
-
-          bestMove = cSearch.RootMoves[nLevelRoot].m_PV[0];
-          //bool updated = (nLevelRoot <= cSearch.nIndexPV);
-          //val v = (updated ? cSearch.RootMoves[nLevelRoot].m_nVal : cSearch.RootMoves[nLevelRoot].m_LastVal);
-          val v = (cSearch.RootMoves[i].m_nVal == -cValoresJuego.INFINITO) ? cSearch.RootMoves[i].m_LastVal : cSearch.RootMoves[i].m_nVal;
-          score = v;
-        }
-
+        if(mov.m_nVal < -cValoresJuego.PEON_MJ*(cConfigFile.MAX_LEVEL-nLevel))
+          break;
+        else
+          nMinus++;
       }
 
-      int bestpos = BuscarMov(cSearch.RootMoves, 0, cSearch.RootMoves.Count, bestMove);
-      if (bestpos >= 0)
+      Random r = new Random((int)(cReloj.Now() % 50));
+      int rnext = r.Next(1, cConfigFile.MAX_LEVEL);
+
+      if(rnext > nLevel)
       {
-        cRaizMov temp = cSearch.RootMoves[0];
-        cSearch.RootMoves[0] = cSearch.RootMoves[bestpos];
-        cSearch.RootMoves[bestpos] = temp;
+        int nLevelRoot = 0;
+        if(nMinus > 0)
+          nLevelRoot = Math.Min(nMinus - (int)Math.Round(((nMinus * (percent / 100.0))), 0), nMinus - 1);
+
+        best = cSearch.RootMoves[nLevelRoot].m_PV[0];
       }
 
-      return bestMove;
+      return best;
     }
-    
-    //-----------------------------------------------------------------------------------------------------
-    public static void BusquedaRecursiva(cPosicion pos)
+
+    public static void id_loop(cPosicion pos)
     {
-      cPilaMov[] stack = new cPilaMov[cSearch.MAX_PLY_PLUS_6];
+      cStackMov[] stack = new cStackMov[cSearch.MAX_PLY_PLUS_6];
       int ss = 2;
       ply depth;
       val bestValue, alpha, beta, delta;
-
       for (int i = 0; i < cSearch.MAX_PLY_PLUS_6; i++)
-        stack[i] = new cPilaMov();
-
+        stack[i] = new cStackMov();
       stack[ss - 1].currentMove = cMovType.MOV_NULO;
       depth = 0;
       BestMoveChanges = 0;
       bestValue = delta = alpha = -cValoresJuego.INFINITO;
       beta = cValoresJuego.INFINITO;
       cMotor.m_TablaHash.NewIteraccion();
-      m_Historial.Clear();
-      m_Beneficios.Clear();
+      History.Clear();
+      Gains.Clear();
       Countermoves.Clear();
       Followupmoves.Clear();
+      MultiPV = cMotor.m_mapConfig["MultiPV"].Get();
+      MultiPV = Math.Min(MultiPV, RootMoves.Count);
 
-      MultiPV = Math.Min(cMotor.m_mapConfig["MultiPV"].Get(), RootMoves.Count);
 
-      if (cMotor.m_ConfigFile.m_nNivelJuego < cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_Elo"].Get() < cConfigFile.MAX_LEVEL_ELO))
-        MultiPV = RootMoves.Count;//Math.Min(cMotor.m_ConfigFile.m_nNivelJuego, RootMoves.Count);
+      if(cMotor.m_ConfigFile.m_nNivelJuego != cConfigFile.MAX_LEVEL || cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0 && MultiPV < 4)
+        MultiPV = Math.Min(4, RootMoves.Count);
 
-      while (++depth <= cSearch.MAX_PLY && !m_Sennales.STOP && (0 == m_Limites.depth || depth <= m_Limites.depth))
+      while (++depth <= cSearch.MAX_PLY && !Signals.STOP && (0 == Limits.depth || depth <= Limits.depth))
       {
 
         BestMoveChanges *= 0.5;
@@ -260,144 +339,125 @@ namespace Motor
         for (int i = 0; i < RootMoves.Count; ++i)
           RootMoves[i].m_LastVal = RootMoves[i].m_nVal;
 
-        for (nIndexPV = 0; nIndexPV < MultiPV && !m_Sennales.STOP; ++nIndexPV)
+        for (PVIdx = 0; PVIdx < MultiPV && !Signals.STOP; ++PVIdx)
         {
 
           if (depth >= 5)
           {
             delta = 16;
-            alpha = Math.Max(RootMoves[nIndexPV].m_LastVal - delta, -cValoresJuego.INFINITO);
-            beta = Math.Min(RootMoves[nIndexPV].m_LastVal + delta, cValoresJuego.INFINITO);
+            alpha = Math.Max(RootMoves[PVIdx].m_LastVal - delta, -cValoresJuego.INFINITO);
+            beta = Math.Min(RootMoves[PVIdx].m_LastVal + delta, cValoresJuego.INFINITO);
           }
+
 
           while (true)
           {
             try
             {
-              bestValue = Buscar(pos, stack, ss, alpha, beta, depth * cPly.ONE_PLY, false, cTipoNodo.RAIZ, false);
+              bestValue = search(pos, stack, ss, alpha, beta, depth * cPly.ONE_PLY, false, cTipoNodo.RAIZ, false);
+            
+            
+            cRaizMov.Ordenar(RootMoves, PVIdx, RootMoves.Count);
 
-              //cRaizMov.Ordenar(RootMoves, PVIdx, RootMoves.Count);
-              //cRaizMov.Ordenar(RootMoves, 0, RootMoves.Count);
-              cRaizMov.Ordenar(RootMoves, 0, RootMoves.Count);
 
-
-              for (int i = 0; i <= nIndexPV; ++i)
-                RootMoves[i].InsertarPVToHash(pos);
+            for (int i = 0; i <= PVIdx; ++i)
+              RootMoves[i].insert_pv_in_tt(pos);
 
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
+#if DEBUG
               Debug.Write(ex.Message);
-              cMotor.m_Consola.Print("Exception: " + ex.Message, AccionConsola.NADA);
-              m_Sennales.FAILED = true;
+#endif
+              Signals.FAILED = true;
               break;
             }
 
-            if (m_Sennales.STOP)
+            if (Signals.STOP)
               break;
+            
 
-            //if ((bestValue <= alpha || bestValue >= beta))
-            //cMotor.m_Consola.PrintLine(cRaizMov.PrintPV(pos, depth, alpha, beta), AccionConsola.ATOMIC, cMotor.m_Consola.m_bInTest);
+            if ((bestValue <= alpha || bestValue >= beta)/* && (cReloj.Now() - SearchTime) > 1000*/)
+              cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
+
 
             if (bestValue <= alpha)
             {
               alpha = Math.Max(bestValue - delta, -cValoresJuego.INFINITO);
-              m_Sennales.FAILED = true;
-              m_Sennales.STOP_ON_PONDER = false;
+              Signals.FAILED = true;
+              Signals.STOP_ON_PONDER = false;
             }
             else if (bestValue >= beta)
               beta = Math.Min(bestValue + delta, cValoresJuego.INFINITO);
             else
               break;
-
+            
             delta += delta / 2;
-
+           
           }
 
-          //cRaizMov.Ordenar(RootMoves, 0, PVIdx + 1);
-          //cRaizMov.Ordenar(RootMoves, 0, RootMoves.Count);
+          cRaizMov.Ordenar(RootMoves, 0, PVIdx + 1);
 
-          //if ((nIndexPV + 1 == MultiPV && MultiPV > 1))
-            cMotor.m_Consola.PrintLine(cRaizMov.PrintPV(pos, depth, alpha, beta), AccionConsola.ATOMIC, cMotor.m_Consola.m_bInTest);
+          //if ((PVIdx + 1 == MultiPV && MultiPV > 1)  || (cReloj.Now() - SearchTime) > 1000)
+            cMotor.m_Consola.PrintLine(uci_pv(pos, depth, alpha, beta), AccionConsola.ATOMIC);
         }
 
-        //if (cMotor.m_ConfigFile.m_nNivelJuego < cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_Elo"].Get() < cConfigFile.MAX_LEVEL_ELO))
-        //  GetMovFromLevel(cMotor.m_ConfigFile.m_nNivelJuego, cMotor.m_mapConfig.ContainsKey("LevelELO") == false, ref bestValue);
+        if(cMotor.m_ConfigFile.m_nNivelJuego != cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0))
+          bestValue = GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego);
 
-        if (m_Limites.mate != 0
-          && bestValue >= cValoresJuego.MATE_MAXIMO
-          && cValoresJuego.MATE - bestValue <= 2 * m_Limites.mate)
-          m_Sennales.STOP = true;
+        if (Limits.mate != 0
+            && bestValue >= cValoresJuego.MATE_MAXIMO
+            && cValoresJuego.MATE - bestValue <= 2 * Limits.mate)
+          Signals.STOP = true;
 
-        if (m_Limites.ControlDeTiempoDefinido() && !m_Sennales.STOP && !m_Sennales.STOP_ON_PONDER)
+        if (Limits.ControlDeTiempoDefinido() && !Signals.STOP && !Signals.STOP_ON_PONDER)
         {
 
-          if (depth > 4 && depth < 50 && MultiPV == 1)
-            m_ControlReloj.Inestabilidad(BestMoveChanges);
+          if (depth > 10 && depth < 50 && MultiPV == 1)
+            TimeMgr.Inestabilidad(BestMoveChanges);
 
-          if (RootMoves.Count == 1 || cReloj.Now() - SearchTime > m_ControlReloj.Disponible())
+
+          if (RootMoves.Count == 1 || cReloj.Now() - SearchTime > TimeMgr.Disponible())
           {
-            if (m_Limites.ponder != 0)
-              m_Sennales.STOP_ON_PONDER = true;
+            if (Limits.ponder != 0)
+              Signals.STOP_ON_PONDER = true;
             else
-              m_Sennales.STOP = true;
+              Signals.STOP = true;
           }
         }
       }
 
       //-- Get level move
-      if (cMotor.m_ConfigFile.m_nNivelJuego < cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_Elo"].Get() < cConfigFile.MAX_LEVEL_ELO))
+      if(cMotor.m_ConfigFile.m_nNivelJuego != cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_LimitStrength"].Get() != 0))
       {
-        GetMovFromLevel(cMotor.m_ConfigFile.m_nNivelJuego, cMotor.m_mapConfig["LevelELO"].Get() == 0, ref bestValue);
+        int bestpos = Buscar(cSearch.RootMoves, 0, cSearch.RootMoves.Count, GetLevelMove(cMotor.m_ConfigFile.m_nNivelJuego));
+        if(bestpos >= 0)
+        {
+          cRaizMov temp = cSearch.RootMoves[0];
+          cSearch.RootMoves[0] = cSearch.RootMoves[bestpos];
+          cSearch.RootMoves[bestpos] = temp;
+        }
       }
-
-      //if (cMotor.m_mapConfig["Log"].Get() != 0)
-      //{
-      //	cMotor.m_Consola.Print(cTypes.LF + "Legal Moves: " + cTypes.LF, AccionConsola.NADA);
-      //	foreach (cRaizMov move in cSearch.RootMoves)
-      //	{
-      //		string strLog = cUci.GetMovimiento(move.m_PV[0], pos.IsChess960() != false);
-
-      //		if (Math.Abs(move.m_LastVal) != cValoresJuego.INFINITO)
-      //			strLog += " (" + (move.m_LastVal * 100 / cValoresJuego.PEON_FINAL) + ")";
-      //		else
-      //			strLog += " (nul)";
-
-      //		cMotor.m_Consola.Print(strLog + cTypes.LF, AccionConsola.NADA);
-      //	}
-      //}
-
     }
 
-    //-----------------------------------------------------------------------------------------------------
-    public static val Buscar(cPosicion pos, cPilaMov[] ss, int ssPos, val alpha, val beta, ply depth, bool cutNode, NodeType NT, bool SpNode)
+    public static val search(cPosicion pos, cStackMov[] ss, int ssPos, val alpha, val beta, ply depth, bool cutNode, NodeType NT, bool SpNode)
     {
       bool RootNode = (NT == cTipoNodo.RAIZ);
       bool PvNode = (NT == cTipoNodo.PV || NT == cTipoNodo.RAIZ);
       mov[] quietsSearched = new mov[64];
       cPosInfo st = new cPosInfo();
-      cTablaHashItem tte;
+      cTablaHashStruct tte;
       cSplitPoint splitPoint = null;
       hash posKey = 0;
       mov ttMove, move, excludedMove, bestMove;
       ply ext, newDepth, predictedDepth;
       val bestValue, value, ttValue, eval, nullValue, futilityValue;
       bool inCheck, givesCheck, pvMove, singularExtensionNode, improving;
-      bool bCapturaOPromocion, dangerous, doFullDepthSearch;
+      bool captureOrPromotion, dangerous, doFullDepthSearch;
       int moveCount = 0, quietCount = 0;
 
       cThread thisThread = pos.ThreadActive();
-
       inCheck = pos.Jaques() != 0;
-
-      //inCheck &= pos.m_Mission[pos.ColorMueve()].m_nMissionType == cMission.CHECKMATE;
-
-
-      if (pos.EvalMission(pos.ColorMueve()) != 0)
-      {
-        return cTypes.MateEn(ss[ssPos].ply);
-      }
-
       if (SpNode)
       {
         splitPoint = ss[ssPos].splitPoint;
@@ -410,7 +470,6 @@ namespace Motor
       }
       moveCount = quietCount = 0;
       bestValue = -cValoresJuego.INFINITO;
-
       ss[ssPos].currentMove = ss[ssPos].ttMove = ss[ssPos + 1].excludedMove = bestMove = cMovType.MOV_NAN;
       ss[ssPos].ply = ss[ssPos - 1].ply + 1;
       ss[ssPos + 1].skipNullMove = 0;
@@ -419,42 +478,50 @@ namespace Motor
 
       if (PvNode && thisThread.m_nMaxPly < ss[ssPos].ply)
         thisThread.m_nMaxPly = ss[ssPos].ply;
-
       if (!RootNode)
       {
 
-        if (m_Sennales.STOP || pos.IsTablas() || ss[ssPos].ply > cSearch.MAX_PLY)
-          return ss[ssPos].ply > cSearch.MAX_PLY && !inCheck ? cEval.Eval(pos) : m_ValorTablas[pos.ColorMueve()];
+        if (Signals.STOP || pos.IsTablas() || ss[ssPos].ply > cSearch.MAX_PLY)
+          return ss[ssPos].ply > cSearch.MAX_PLY && !inCheck ? cEval.Eval(pos) : DrawValue[pos.ColorMueve()];
+
+
+
+
+
 
         alpha = Math.Max(cTypes.MateEnVs(ss[ssPos].ply), alpha);
         beta = Math.Min(cTypes.MateEn(ss[ssPos].ply + 1), beta);
-
         if (alpha >= beta)
           return alpha;
       }
 
+
+
       excludedMove = ss[ssPos].excludedMove;
       posKey = excludedMove != 0 ? pos.GetClaveHashExclusion() : pos.ClaveHash();
       tte = cMotor.m_TablaHash.Buscar(posKey);
-      ss[ssPos].ttMove = ttMove = RootNode ? RootMoves[nIndexPV].m_PV[0] : tte != null ? tte.GetMove() : cMovType.MOV_NAN;
-      ttValue = (tte != null) ? ValorFromHash(tte.GetValue(), ss[ssPos].ply) : cValoresJuego.NAN;
+      ss[ssPos].ttMove = ttMove = RootNode ? RootMoves[PVIdx].m_PV[0] : tte != null ? tte.GetMove() : cMovType.MOV_NAN;
+      ttValue = (tte != null) ? value_from_tt(tte.GetValue(), ss[ssPos].ply) : cValoresJuego.NAN;
+
+
+
 
       if (!RootNode
-        && tte != null
-        && tte.GetDepth() >= depth
-        && ttValue != cValoresJuego.NAN
-        && (PvNode ? tte.GetBound() == cBordes.BOUND_EXACT
-          : ttValue >= beta ? (tte.GetBound() & cBordes.BOUND_LOWER) != 0
-                    : (tte.GetBound() & cBordes.BOUND_UPPER) != 0))
+          && tte != null
+          && tte.GetDepth() >= depth
+          && ttValue != cValoresJuego.NAN
+          && (PvNode ? tte.GetBound() == cBordes.BOUND_EXACT
+              : ttValue >= beta ? (tte.GetBound() & cBordes.BOUND_LOWER) != 0
+                                : (tte.GetBound() & cBordes.BOUND_UPPER) != 0))
       {
         ss[ssPos].currentMove = ttMove;
 
         if (ttValue >= beta && ttMove != 0 && !pos.IsCapturaOrPromocion(ttMove) && !inCheck)
-          cPilaMov.ActualizarPila(pos, ss, ssPos, ttMove, depth, null, 0);
+          update_stats(pos, ss, ssPos, ttMove, depth, null, 0);
         return ttValue;
       }
 
-      if (inCheck || pos.EvalMission(pos.ColorMueve()) != 0)
+      if (inCheck)
       {
         ss[ssPos].staticEval = eval = cValoresJuego.NAN;
         goto moves_loop;
@@ -475,48 +542,47 @@ namespace Motor
         cMotor.m_TablaHash.Save(posKey, cValoresJuego.NAN, cBordes.BOUND_NONE, cPly.DEPTH_NONE, cMovType.MOV_NAN, ss[ssPos].staticEval);
       }
       if (0 == pos.GetTipoPiezaCapturada()
-        && ss[ssPos].staticEval != cValoresJuego.NAN
-        && ss[ssPos - 1].staticEval != cValoresJuego.NAN
-        && (move = ss[ssPos - 1].currentMove) != cMovType.MOV_NULO
-        && cTypes.TipoMovimiento(move) == cMovType.NORMAL)
+          && ss[ssPos].staticEval != cValoresJuego.NAN
+          && ss[ssPos - 1].staticEval != cValoresJuego.NAN
+          && (move = ss[ssPos - 1].currentMove) != cMovType.MOV_NULO
+          && cTypes.TipoMovimiento(move) == cMovType.NORMAL)
       {
         sq to = cTypes.GetToCasilla(move);
-        m_Beneficios.Fill(pos.GetPieza(to), to, -ss[ssPos - 1].staticEval - ss[ssPos].staticEval);
+        Gains.Fill(pos.GetPieza(to), to, -ss[ssPos - 1].staticEval - ss[ssPos].staticEval);
       }
 
       if (!PvNode
-        && depth < 4 * cPly.ONE_PLY
-        && eval + Razor_margin(depth) <= beta
-        && ttMove == cMovType.MOV_NAN
-        && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
-        && !pos.IsPeonOn7(pos.ColorMueve())
-        )
+          && depth < 4 * cPly.ONE_PLY
+          && eval + razor_margin(depth) <= beta
+          && ttMove == cMovType.MOV_NAN
+          && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
+          && !pos.IsPeonOn7(pos.ColorMueve())
+          )
       {
         if (depth <= cPly.ONE_PLY
-          && eval + Razor_margin(3 * cPly.ONE_PLY) <= alpha)
-          return BuscarQ(pos, ss, ssPos, alpha, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
-
-        val ralpha = alpha - Razor_margin(depth);
-        val v = BuscarQ(pos, ss, ssPos, ralpha, ralpha + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
+            && eval + razor_margin(3 * cPly.ONE_PLY) <= alpha)
+          return qsearch(pos, ss, ssPos, alpha, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
+        val ralpha = alpha - razor_margin(depth);
+        val v = qsearch(pos, ss, ssPos, ralpha, ralpha + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false);
         if (v <= ralpha)
           return v;
       }
 
       if (!PvNode
-        && 0 == ss[ssPos].skipNullMove
-        && depth < 7 * cPly.ONE_PLY
-        && eval - MargenFutilityPrunning(depth) >= beta
-        && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
-        && Math.Abs(eval) < cValoresJuego.GANA
-        && pos.MaterialPieza(pos.ColorMueve()) != 0)
-        return eval - MargenFutilityPrunning(depth);
+          && 0 == ss[ssPos].skipNullMove
+          && depth < 7 * cPly.ONE_PLY
+          && eval - futility_margin(depth) >= beta
+          && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
+          && Math.Abs(eval) < cValoresJuego.GANA
+          && pos.MaterialPieza(pos.ColorMueve()) != 0)
+        return eval - futility_margin(depth);
 
       if (!PvNode
-        && 0 == ss[ssPos].skipNullMove
-        && depth >= 2 * cPly.ONE_PLY
-        && eval >= beta
-        && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
-        && pos.MaterialPieza(pos.ColorMueve()) != 0)
+          && 0 == ss[ssPos].skipNullMove
+          && depth >= 2 * cPly.ONE_PLY
+          && eval >= beta
+          && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO
+          && pos.MaterialPieza(pos.ColorMueve()) != 0)
       {
         ss[ssPos].currentMove = cMovType.MOV_NULO;
 
@@ -524,10 +590,9 @@ namespace Motor
          + depth / 4
          + (eval - beta) / cValoresJuego.PEON_MJ * cPly.ONE_PLY;
         pos.DoNullMov(st);
-
         ss[ssPos + 1].skipNullMove = 1;
-        nullValue = depth - R < cPly.ONE_PLY ? -BuscarQ(pos, ss, ssPos + 1, -beta, -beta + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
-                    : -Buscar(pos, ss, ssPos + 1, -beta, -beta + 1, depth - R, !cutNode, cTipoNodo.NO_PV, false);
+        nullValue = depth - R < cPly.ONE_PLY ? -qsearch(pos, ss, ssPos + 1, -beta, -beta + 1, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                              : -search(pos, ss, ssPos + 1, -beta, -beta + 1, depth - R, !cutNode, cTipoNodo.NO_PV, false);
         ss[ssPos + 1].skipNullMove = 0;
         pos.undo_null_move();
         if (nullValue >= beta)
@@ -539,8 +604,8 @@ namespace Motor
             return nullValue;
 
           ss[ssPos].skipNullMove = 1;
-          val v = depth - R < cPly.ONE_PLY ? BuscarQ(pos, ss, ssPos, beta - 1, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
-                    : Buscar(pos, ss, ssPos, beta - 1, beta, depth - R, false, cTipoNodo.NO_PV, false);
+          val v = depth - R < cPly.ONE_PLY ? qsearch(pos, ss, ssPos, beta - 1, beta, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                              : search(pos, ss, ssPos, beta - 1, beta, depth - R, false, cTipoNodo.NO_PV, false);
           ss[ssPos].skipNullMove = 0;
           if (v >= beta)
             return nullValue;
@@ -551,20 +616,20 @@ namespace Motor
 
 
       if (!PvNode
-        && depth >= 5 * cPly.ONE_PLY
-        && 0 == ss[ssPos].skipNullMove
-        && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO)
+          && depth >= 5 * cPly.ONE_PLY
+          && 0 == ss[ssPos].skipNullMove
+          && Math.Abs(beta) < cValoresJuego.MATE_MAXIMO)
       {
         val rbeta = Math.Min(beta + 200, cValoresJuego.INFINITO);
         ply rdepth = depth - 4 * cPly.ONE_PLY;
-        cListaOrdenadaMov mp2 = new cListaOrdenadaMov(pos, ttMove, m_Historial, pos.GetTipoPiezaCapturada());
+        cMovOrder mp2 = new cMovOrder(pos, ttMove, History, pos.GetTipoPiezaCapturada());
         cInfoJaque ci2 = new cInfoJaque(pos);
         while ((move = mp2.SiguienteMovimientoEnFalso()) != cMovType.MOV_NAN)
           if (pos.IsLegalMov(move, ci2.m_Clavadas))
           {
             ss[ssPos].currentMove = move;
             pos.DoMov(move, st, ci2, pos.IsJaque(move, ci2));
-            value = -Buscar(pos, ss, ssPos + 1, -rbeta, -rbeta + 1, rdepth, !cutNode, cTipoNodo.NO_PV, false);
+            value = -search(pos, ss, ssPos + 1, -rbeta, -rbeta + 1, rdepth, !cutNode, cTipoNodo.NO_PV, false);
             pos.DesMov(move);
             if (value >= rbeta)
               return value;
@@ -572,36 +637,36 @@ namespace Motor
       }
 
       if (depth >= (PvNode ? 5 * cPly.ONE_PLY : 8 * cPly.ONE_PLY)
-        && 0 == ttMove
-        && (PvNode || (ss[ssPos].staticEval + 256 >= beta)))
+          && 0 == ttMove
+          && (PvNode || (ss[ssPos].staticEval + 256 >= beta)))
       {
         ply d = depth - 2 * cPly.ONE_PLY - (PvNode ? cPly.DEPTH_ZERO : depth / 4);
         ss[ssPos].skipNullMove = 1;
-        Buscar(pos, ss, ssPos, alpha, beta, d, true, PvNode ? cTipoNodo.PV : cTipoNodo.NO_PV, false);
+        search(pos, ss, ssPos, alpha, beta, d, true, PvNode ? cTipoNodo.PV : cTipoNodo.NO_PV, false);
         ss[ssPos].skipNullMove = 0;
         tte = cMotor.m_TablaHash.Buscar(posKey);
         ttMove = (tte != null) ? tte.GetMove() : cMovType.MOV_NAN;
       }
-      moves_loop:
+    moves_loop:
       sq prevMoveSq = cTypes.GetToCasilla(ss[ssPos - 1].currentMove);
       mov[] countermoves = { Countermoves[pos.GetPieza(prevMoveSq)][prevMoveSq].m_Key1,
-                  Countermoves[pos.GetPieza(prevMoveSq)][prevMoveSq].m_Key2 };
+                                    Countermoves[pos.GetPieza(prevMoveSq)][prevMoveSq].m_Key2 };
       sq prevOwnMoveSq = cTypes.GetToCasilla(ss[ssPos - 2].currentMove);
       mov[] followupmoves = {Followupmoves[pos.GetPieza(prevOwnMoveSq)][prevOwnMoveSq].m_Key1,
-                  Followupmoves[pos.GetPieza(prevOwnMoveSq)][prevOwnMoveSq].m_Key2 };
-      cListaOrdenadaMov mp = new cListaOrdenadaMov(pos, ttMove, depth, m_Historial, countermoves, followupmoves, ss[ssPos]);
+                                    Followupmoves[pos.GetPieza(prevOwnMoveSq)][prevOwnMoveSq].m_Key2 };
+      cMovOrder mp = new cMovOrder(pos, ttMove, depth, History, countermoves, followupmoves, ss[ssPos]);
       cInfoJaque ci = new cInfoJaque(pos);
       value = bestValue;
       improving = ss[ssPos].staticEval >= ss[ssPos - 2].staticEval
          || ss[ssPos].staticEval == cValoresJuego.NAN
          || ss[ssPos - 2].staticEval == cValoresJuego.NAN;
       singularExtensionNode = !RootNode
-                   && !SpNode
-                   && depth >= 8 * cPly.ONE_PLY
-                   && ttMove != cMovType.MOV_NAN
-                   && 0 == excludedMove
-                   && (tte.GetBound() & cBordes.BOUND_LOWER) != 0
-                   && tte.GetDepth() >= depth - 3 * cPly.ONE_PLY;
+                             && !SpNode
+                             && depth >= 8 * cPly.ONE_PLY
+                             && ttMove != cMovType.MOV_NAN
+                             && 0 == excludedMove
+                             && (tte.GetBound() & cBordes.BOUND_LOWER) != 0
+                             && tte.GetDepth() >= depth - 3 * cPly.ONE_PLY;
 
 
       while ((move = (SpNode ? mp.SiguienteMovimiento() : mp.SiguienteMovimientoEnFalso())) != cMovType.MOV_NAN)
@@ -611,7 +676,7 @@ namespace Motor
 
 
 
-        if (RootNode && (BuscarMov(RootMoves, nIndexPV, RootMoves.Count, move) == -1))
+        if (RootNode && (Buscar(RootMoves, PVIdx, RootMoves.Count, move) == -1))
           continue;
         if (SpNode)
         {
@@ -625,17 +690,14 @@ namespace Motor
           ++moveCount;
         if (RootNode)
         {
-          m_Sennales.FIRST_MOVE = (moveCount == 1);
+          Signals.FIRST_MOVE = (moveCount == 1);
 
         }
         ext = cPly.DEPTH_ZERO;
-        bCapturaOPromocion = pos.IsCapturaOrPromocion(move);
-        givesCheck = (cTypes.TipoMovimiento(move) == cMovType.NORMAL && 0 == ci.m_Candidatas
+        captureOrPromotion = pos.IsCapturaOrPromocion(move);
+        givesCheck = cTypes.TipoMovimiento(move) == cMovType.NORMAL && 0 == ci.m_Candidatas
           ? (ci.m_Jaque[cTypes.TipoPieza(pos.GetPieza(cTypes.GetFromCasilla(move)))] & cBitBoard.m_nCasillas[cTypes.GetToCasilla(move)]) != 0
-          : pos.IsJaque(move, ci));
-
-        //givesCheck &= pos.m_Mission[pos.ColorMueve()].m_nMissionType == cMission.CHECKMATE;
-
+          : pos.IsJaque(move, ci);
         dangerous = givesCheck
          || cTypes.TipoMovimiento(move) != cMovType.NORMAL
          || pos.IsPeonAvanzado(move);
@@ -648,15 +710,15 @@ namespace Motor
 
 
         if (singularExtensionNode
-          && move == ttMove
-          && 0 == ext
-          && pos.IsLegalMov(move, ci.m_Clavadas)
-          && Math.Abs(ttValue) < cValoresJuego.GANA)
+            && move == ttMove
+            && 0 == ext
+            && pos.IsLegalMov(move, ci.m_Clavadas)
+            && Math.Abs(ttValue) < cValoresJuego.GANA)
         {
           val rBeta = ttValue - depth;
           ss[ssPos].excludedMove = move;
           ss[ssPos].skipNullMove = 1;
-          value = Buscar(pos, ss, ssPos, rBeta - 1, rBeta, depth / 2, cutNode, cTipoNodo.NO_PV, false);
+          value = search(pos, ss, ssPos, rBeta - 1, rBeta, depth / 2, cutNode, cTipoNodo.NO_PV, false);
           ss[ssPos].skipNullMove = 0;
           ss[ssPos].excludedMove = cMovType.MOV_NAN;
           if (value < rBeta)
@@ -666,10 +728,10 @@ namespace Motor
         newDepth = depth - cPly.ONE_PLY + ext;
 
         if (!PvNode
-          && !bCapturaOPromocion
-          && !inCheck
-          && !dangerous
-          && bestValue > cValoresJuego.MATE_MAXIMO_VS)
+            && !captureOrPromotion
+            && !inCheck
+            && !dangerous
+            && bestValue > cValoresJuego.MATE_MAXIMO_VS)
         {
 
           if (depth < 16 * cPly.ONE_PLY && moveCount >= FutilityMoveCounts[improving ? 1 : 0][depth])
@@ -678,12 +740,12 @@ namespace Motor
               splitPoint.mutex.Bloquear();
             continue;
           }
-          predictedDepth = newDepth - Reduccion(improving ? 1 : 0, depth, moveCount, PvNode ? 1 : 0);
+          predictedDepth = newDepth - reduction(improving ? 1 : 0, depth, moveCount, PvNode ? 1 : 0);
 
           if (predictedDepth < 7 * cPly.ONE_PLY)
           {
-            futilityValue = ss[ssPos].staticEval + MargenFutilityPrunning(predictedDepth)
-                  + 128 + m_Beneficios[pos.GetPiezaMovida(move)][cTypes.GetToCasilla(move)];
+            futilityValue = ss[ssPos].staticEval + futility_margin(predictedDepth)
+                        + 128 + Gains[pos.GetPiezaMovida(move)][cTypes.GetToCasilla(move)];
             if (futilityValue <= alpha)
             {
               bestValue = Math.Max(bestValue, futilityValue);
@@ -712,66 +774,60 @@ namespace Motor
         }
         pvMove = PvNode && moveCount == 1;
         ss[ssPos].currentMove = move;
-        if (!SpNode && !bCapturaOPromocion && quietCount < 64)
+        if (!SpNode && !captureOrPromotion && quietCount < 64)
           quietsSearched[quietCount++] = move;
 
         pos.DoMov(move, st, ci, givesCheck);
 
-        if (pos.EvalMission(cTypes.Contrario(pos.ColorMueve())) != 0)
-        {
-          //pos.DesMov(move);
-          value = cTypes.MateEn(ss[ssPos].ply);
-        }
-        else
-        {
-          if (depth >= 3 * cPly.ONE_PLY
+
+        if (depth >= 3 * cPly.ONE_PLY
             && !pvMove
-            && !bCapturaOPromocion
+            && !captureOrPromotion
             && move != ttMove
             && move != ss[ssPos].killers0
             && move != ss[ssPos].killers1)
+        {
+          ss[ssPos].reduction = reduction(improving ? 1 : 0, depth, moveCount, PvNode ? 1 : 0);
+          if (!PvNode && cutNode)
+            ss[ssPos].reduction += cPly.ONE_PLY;
+          else if (History[pos.GetPieza(cTypes.GetToCasilla(move))][cTypes.GetToCasilla(move)] < 0)
+            ss[ssPos].reduction += cPly.ONE_PLY / 2;
+          if (move == countermoves[0] || move == countermoves[1])
+            ss[ssPos].reduction = Math.Max(cPly.DEPTH_ZERO, ss[ssPos].reduction - cPly.ONE_PLY);
+          ply d = Math.Max(newDepth - ss[ssPos].reduction, cPly.ONE_PLY);
+          if (SpNode)
+            alpha = splitPoint.alpha;
+          value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d, true, cTipoNodo.NO_PV, false);
+
+          if (value > alpha && ss[ssPos].reduction >= 4 * cPly.ONE_PLY)
           {
-            ss[ssPos].reduction = Reduccion(improving ? 1 : 0, depth, moveCount, PvNode ? 1 : 0);
-            if (!PvNode && cutNode)
-              ss[ssPos].reduction += cPly.ONE_PLY;
-            else if (m_Historial[pos.GetPieza(cTypes.GetToCasilla(move))][cTypes.GetToCasilla(move)] < 0)
-              ss[ssPos].reduction += cPly.ONE_PLY / 2;
-            if (move == countermoves[0] || move == countermoves[1])
-              ss[ssPos].reduction = Math.Max(cPly.DEPTH_ZERO, ss[ssPos].reduction - cPly.ONE_PLY);
-            ply d = Math.Max(newDepth - ss[ssPos].reduction, cPly.ONE_PLY);
-            if (SpNode)
-              alpha = splitPoint.alpha;
-            value = -Buscar(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d, true, cTipoNodo.NO_PV, false);
-
-            if (value > alpha && ss[ssPos].reduction >= 4 * cPly.ONE_PLY)
-            {
-              ply d2 = Math.Max(newDepth - 2 * cPly.ONE_PLY, cPly.ONE_PLY);
-              value = -Buscar(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d2, true, cTipoNodo.NO_PV, false);
-            }
-            doFullDepthSearch = (value > alpha && ss[ssPos].reduction != cPly.DEPTH_ZERO);
-            ss[ssPos].reduction = cPly.DEPTH_ZERO;
+            ply d2 = Math.Max(newDepth - 2 * cPly.ONE_PLY, cPly.ONE_PLY);
+            value = -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, d2, true, cTipoNodo.NO_PV, false);
           }
-          else
-            doFullDepthSearch = !pvMove;
-
-          if (doFullDepthSearch)
-          {
-            if (SpNode)
-              alpha = splitPoint.alpha;
-
-            value = newDepth < cPly.ONE_PLY ?
-                -BuscarQ(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, givesCheck)
-                : -Buscar(pos, ss, ssPos + 1, -(alpha + 1), -alpha, newDepth, !cutNode, cTipoNodo.NO_PV, false);
-
-          }
-
-
-
-          if (PvNode && (pvMove || (value > alpha && (RootNode || value < beta))))
-            value = newDepth < cPly.ONE_PLY ?
-            -BuscarQ(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, cTipoNodo.PV, givesCheck)
-            : -Buscar(pos, ss, ssPos + 1, -beta, -alpha, newDepth, false, cTipoNodo.PV, false);
+          doFullDepthSearch = (value > alpha && ss[ssPos].reduction != cPly.DEPTH_ZERO);
+          ss[ssPos].reduction = cPly.DEPTH_ZERO;
         }
+        else
+          doFullDepthSearch = !pvMove;
+
+        if (doFullDepthSearch)
+        {
+          if (SpNode)
+            alpha = splitPoint.alpha;
+          value = newDepth < cPly.ONE_PLY ?
+                givesCheck ? -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, true)
+                           : -qsearch(pos, ss, ssPos + 1, -(alpha + 1), -alpha, cPly.DEPTH_ZERO, cTipoNodo.NO_PV, false)
+                           : -search(pos, ss, ssPos + 1, -(alpha + 1), -alpha, newDepth, !cutNode, cTipoNodo.NO_PV, false);
+        }
+
+
+
+        if (PvNode && (pvMove || (value > alpha && (RootNode || value < beta))))
+          value = newDepth < cPly.ONE_PLY ?
+                        givesCheck ? -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, cTipoNodo.PV, true)
+                           : -qsearch(pos, ss, ssPos + 1, -beta, -alpha, cPly.DEPTH_ZERO, cTipoNodo.PV, false)
+                           : -search(pos, ss, ssPos + 1, -beta, -alpha, newDepth, false, cTipoNodo.PV, false);
+
         pos.DesMov(move);
 
         if (SpNode)
@@ -783,18 +839,17 @@ namespace Motor
 
 
 
-        if (m_Sennales.STOP || thisThread.IsCorte())
+        if (Signals.STOP || thisThread.IsCorte())
           return cValoresJuego.CERO;
-
         if (RootNode)
         {
-          int rmPos = BuscarMov(RootMoves, 0, RootMoves.Count, move);
+          int rmPos = Buscar(RootMoves, 0, RootMoves.Count, move);
           cRaizMov rm = RootMoves[rmPos];
 
           if (pvMove || value > alpha)
           {
             rm.m_nVal = value;
-            rm.ExtraerPVFromHash(pos);
+            rm.extract_pv_from_tt(pos);
 
 
 
@@ -807,7 +862,6 @@ namespace Motor
 
             rm.m_nVal = -cValoresJuego.INFINITO;
         }
-
         if (value > bestValue)
         {
           bestValue = SpNode ? splitPoint.bestValue = value : value;
@@ -826,87 +880,80 @@ namespace Motor
         }
 
         if (!SpNode
-          && cMotor.m_Threads.Count >= 2
-          && depth >= cMotor.m_Threads.minimumSplitDepth
-          && (null == thisThread.m_SplitPointActivo
-          || !thisThread.m_SplitPointActivo.allSlavesSearching)
-          && thisThread.m_nSplitPointSize < cThreadBase.MAX_SPLITPOINTS_PER_THREAD)
+            && cMotor.m_Threads.Count >= 2
+            && depth >= cMotor.m_Threads.minimumSplitDepth
+            && (null == thisThread.m_SplitPointActivo
+            || !thisThread.m_SplitPointActivo.allSlavesSearching)
+            && thisThread.m_nSplitPointSize < cThreadBase.MAX_SPLITPOINTS_PER_THREAD)
         {
           thisThread.Split(pos, ss, ssPos, alpha, beta, ref bestValue, ref bestMove,
-                         depth, moveCount, mp, NT, cutNode);
-          if (m_Sennales.STOP || thisThread.IsCorte())
+                                       depth, moveCount, mp, NT, cutNode);
+          if (Signals.STOP || thisThread.IsCorte())
             return cValoresJuego.CERO;
           if (bestValue >= beta)
             break;
         }
       }
-
       if (SpNode)
         return bestValue;
 
+
+
+
+
       if (0 == moveCount)
-      {
-        if (excludedMove != 0)
-          bestValue = alpha;
-        else
-        {
-          if (inCheck || pos.EvalMission(cTypes.Contrario(pos.ColorMueve())) != 0)
-            bestValue = cTypes.MateEnVs(ss[ssPos].ply);
-          else
-            bestValue = m_ValorTablas[pos.ColorMueve()];
-        }
-      }
+        bestValue = excludedMove != 0 ? alpha
+           : inCheck ? cTypes.MateEnVs(ss[ssPos].ply) : DrawValue[pos.ColorMueve()];
+
       else if (bestValue >= beta && !pos.IsCapturaOrPromocion(bestMove) && !inCheck)
-        cPilaMov.ActualizarPila(pos, ss, ssPos, bestMove, depth, quietsSearched, quietCount - 1);
+        update_stats(pos, ss, ssPos, bestMove, depth, quietsSearched, quietCount - 1);
       cMotor.m_TablaHash.Save(posKey, value_to_tt(bestValue, ss[ssPos].ply),
-         bestValue >= beta ? cBordes.BOUND_LOWER :
-         PvNode && bestMove != 0 ? cBordes.BOUND_EXACT : cBordes.BOUND_UPPER,
-         depth, bestMove, ss[ssPos].staticEval);
+           bestValue >= beta ? cBordes.BOUND_LOWER :
+           PvNode && bestMove != 0 ? cBordes.BOUND_EXACT : cBordes.BOUND_UPPER,
+           depth, bestMove, ss[ssPos].staticEval);
       return bestValue;
     }
 
 
-    public static val BuscarQ(cPosicion pos, cPilaMov[] ss, int ssPos, val alpha, val beta, ply depth, NodeType NT, bool InCheck)
+
+    public static val qsearch(cPosicion pos, cStackMov[] ss, int ssPos, val alpha, val beta, ply depth, NodeType NT, bool InCheck)
     {
       bool PvNode = (NT == cTipoNodo.PV);
       cPosInfo st = null;
-      cTablaHashItem tte;
+      cTablaHashStruct tte;
       hash posKey;
       mov ttMove, move, bestMove;
-      val bestValue, value, ttValue, futilityValue, futilityBase = -cValoresJuego.INFINITO, oldAlpha = 0;
+      val bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha = 0;
       bool givesCheck, evasionPrunable;
       ply ttDepth;
 
-
-
       if (PvNode)
         oldAlpha = alpha;
-
       ss[ssPos].currentMove = bestMove = cMovType.MOV_NAN;
       ss[ssPos].ply = ss[ssPos - 1].ply + 1;
 
       if (pos.IsTablas() || ss[ssPos].ply > cSearch.MAX_PLY)
-        return ss[ssPos].ply > cSearch.MAX_PLY && !InCheck ? cEval.Eval(pos) : m_ValorTablas[pos.ColorMueve()];
+        return ss[ssPos].ply > cSearch.MAX_PLY && !InCheck ? cEval.Eval(pos) : DrawValue[pos.ColorMueve()];
+
+
 
       ttDepth = ((InCheck || depth >= cPly.DEPTH_QS_CHECKS) ? cPly.DEPTH_QS_CHECKS
-                                  : cPly.DEPTH_QS_NO_CHECKS);
-
+                                                              : cPly.DEPTH_QS_NO_CHECKS);
 
       posKey = pos.ClaveHash();
       tte = cMotor.m_TablaHash.Buscar(posKey);
       ttMove = (tte != null ? tte.GetMove() : cMovType.MOV_NAN);
-      ttValue = tte != null ? ValorFromHash(tte.GetValue(), ss[ssPos].ply) : cValoresJuego.NAN;
+      ttValue = tte != null ? value_from_tt(tte.GetValue(), ss[ssPos].ply) : cValoresJuego.NAN;
       if (tte != null
-        && tte.GetDepth() >= ttDepth
-        && ttValue != cValoresJuego.NAN
-        && (PvNode ? tte.GetBound() == cBordes.BOUND_EXACT
-          : (ttValue >= beta) ? (tte.GetBound() & cBordes.BOUND_LOWER) != 0
-                    : (tte.GetBound() & cBordes.BOUND_UPPER) != 0))
+          && tte.GetDepth() >= ttDepth
+          && ttValue != cValoresJuego.NAN
+          && (PvNode ? tte.GetBound() == cBordes.BOUND_EXACT
+              : (ttValue >= beta) ? (tte.GetBound() & cBordes.BOUND_LOWER) != 0
+                                : (tte.GetBound() & cBordes.BOUND_UPPER) != 0))
       {
         ss[ssPos].currentMove = ttMove;
         return ttValue;
       }
-
 
       if (InCheck)
       {
@@ -932,7 +979,7 @@ namespace Motor
         {
           if (tte == null)
             cMotor.m_TablaHash.Save(pos.ClaveHash(), value_to_tt(bestValue, ss[ssPos].ply), cBordes.BOUND_LOWER,
-              cPly.DEPTH_NONE, cMovType.MOV_NAN, ss[ssPos].staticEval);
+                cPly.DEPTH_NONE, cMovType.MOV_NAN, ss[ssPos].staticEval);
           return bestValue;
         }
         if (PvNode && bestValue > alpha)
@@ -942,7 +989,8 @@ namespace Motor
 
 
 
-      cListaOrdenadaMov mp = new cListaOrdenadaMov(pos, ttMove, depth, m_Historial, cTypes.GetToCasilla(ss[ssPos - 1].currentMove));
+
+      cMovOrder mp = new cMovOrder(pos, ttMove, depth, History, cTypes.GetToCasilla(ss[ssPos - 1].currentMove));
       cInfoJaque ci = new cInfoJaque(pos);
       st = new cPosInfo();
 
@@ -951,8 +999,6 @@ namespace Motor
         givesCheck = cTypes.TipoMovimiento(move) == cMovType.NORMAL && 0 == ci.m_Candidatas
           ? (ci.m_Jaque[cTypes.TipoPieza(pos.GetPieza(cTypes.GetFromCasilla(move)))] & cBitBoard.m_nCasillas[cTypes.GetToCasilla(move)]) != 0
           : pos.IsJaque(move, ci);
-
-        //givesCheck &= pos.m_Mission[pos.ColorMueve()].m_nMissionType == cMission.CHECKMATE;
 
         if (!PvNode
           && !InCheck
@@ -975,9 +1021,9 @@ namespace Motor
         }
 
         evasionPrunable = InCheck
-                 && bestValue > cValoresJuego.MATE_MAXIMO_VS
-                 && !pos.IsCaptura(move)
-                 && 0 == pos.CanEnroque(pos.ColorMueve());
+                       && bestValue > cValoresJuego.MATE_MAXIMO_VS
+                       && !pos.IsCaptura(move)
+                       && 0 == pos.CanEnroque(pos.ColorMueve());
 
         if (!PvNode
           && (!InCheck || evasionPrunable)
@@ -991,9 +1037,8 @@ namespace Motor
         ss[ssPos].currentMove = move;
 
         pos.DoMov(move, st, ci, givesCheck);
-
-        value = -BuscarQ(pos, ss, ssPos + 1, -beta, -alpha, depth - cPly.ONE_PLY, NT, givesCheck)
-                  ;
+        value = givesCheck ? -qsearch(pos, ss, ssPos + 1, -beta, -alpha, depth - cPly.ONE_PLY, NT, true)
+                            : -qsearch(pos, ss, ssPos + 1, -beta, -alpha, depth - cPly.ONE_PLY, NT, false);
         pos.DesMov(move);
 
         if (value > bestValue)
@@ -1009,19 +1054,19 @@ namespace Motor
             else
             {
               cMotor.m_TablaHash.Save(posKey, value_to_tt(value, ss[ssPos].ply), cBordes.BOUND_LOWER,
-                   ttDepth, move, ss[ssPos].staticEval);
+                       ttDepth, move, ss[ssPos].staticEval);
               return value;
             }
           }
         }
       }
 
+
       if (InCheck && bestValue == -cValoresJuego.INFINITO)
         return cTypes.MateEnVs(ss[ssPos].ply);
-
       cMotor.m_TablaHash.Save(posKey, value_to_tt(bestValue, ss[ssPos].ply),
-        PvNode && bestValue > oldAlpha ? cBordes.BOUND_EXACT : cBordes.BOUND_UPPER,
-        ttDepth, bestMove, ss[ssPos].staticEval);
+          PvNode && bestValue > oldAlpha ? cBordes.BOUND_EXACT : cBordes.BOUND_UPPER,
+          ttDepth, bestMove, ss[ssPos].staticEval);
       return bestValue;
     }
 
@@ -1030,20 +1075,113 @@ namespace Motor
     public static val value_to_tt(val v, int ply)
     {
       return v >= cValoresJuego.MATE_MAXIMO ? v + ply
-          : v <= cValoresJuego.MATE_MAXIMO_VS ? v - ply : v;
+            : v <= cValoresJuego.MATE_MAXIMO_VS ? v - ply : v;
     }
 
 
 
-    public static val ValorFromHash(val v, int ply)
+    public static val value_from_tt(val v, int ply)
     {
       return v == cValoresJuego.NAN ? cValoresJuego.NAN
-          : v >= cValoresJuego.MATE_MAXIMO ? v - ply
-          : v <= cValoresJuego.MATE_MAXIMO_VS ? v + ply : v;
+            : v >= cValoresJuego.MATE_MAXIMO ? v - ply
+            : v <= cValoresJuego.MATE_MAXIMO_VS ? v + ply : v;
     }
 
 
-    public static int BuscarMov(List<cRaizMov> RootMoves, int firstPos, int lastPos, mov moveToFind)
+    public static void update_stats(cPosicion pos, cStackMov[] ss, int ssPos, mov move, ply depth, mov[] quiets, int quietsCnt)
+    {
+      if (ss[ssPos].killers0 != move)
+      {
+        ss[ssPos].killers1 = ss[ssPos].killers0;
+        ss[ssPos].killers0 = move;
+      }
+
+
+      val bonus = ((depth) * (depth));
+      History.Fill(pos.GetPiezaMovida(move), cTypes.GetToCasilla(move), bonus);
+      for (int i = 0; i < quietsCnt; ++i)
+      {
+        mov m = quiets[i];
+        History.Fill(pos.GetPiezaMovida(m), cTypes.GetToCasilla(m), -bonus);
+      }
+      if (cTypes.is_ok_move(ss[ssPos - 1].currentMove))
+      {
+        sq prevMoveSq = cTypes.GetToCasilla(ss[ssPos - 1].currentMove);
+        Countermoves.Fill(pos.GetPieza(prevMoveSq), prevMoveSq, move);
+      }
+      if (cTypes.is_ok_move(ss[ssPos - 2].currentMove) && ss[ssPos - 1].currentMove == ss[ssPos - 1].ttMove)
+      {
+        sq prevOwnMoveSq = cTypes.GetToCasilla(ss[ssPos - 2].currentMove);
+        Followupmoves.Fill(pos.GetPieza(prevOwnMoveSq), prevOwnMoveSq, move);
+      }
+    }
+
+
+
+    public static string uci_pv(cPosicion pos, int depth, val alpha, val beta)
+    {
+      StringBuilder s = new StringBuilder();
+      long elaspsed = cReloj.Now() - SearchTime + 1;
+      int uciPVSize = Math.Min(cMotor.m_mapConfig["MultiPV"].Get(), RootMoves.Count);
+      int selDepth = 0;
+      for (int i = 0; i < cMotor.m_Threads.Count; ++i)
+        if (cMotor.m_Threads[i].m_nMaxPly > selDepth)
+          selDepth = cMotor.m_Threads[i].m_nMaxPly;
+      for (int i = 0; i < uciPVSize; ++i)
+      {
+        bool updated = (i <= PVIdx);
+        if (depth == 1 && !updated)
+          continue;
+        int d = (updated ? depth : depth - 1);
+        if (RootMoves[i].m_PV.Count > 0 && RootMoves[i].m_PV[0] != cMovType.MOV_NAN && 0 < d)
+        {
+          val v = (updated ? RootMoves[i].m_nVal : RootMoves[i].m_LastVal);
+          if (s.Length != 0)
+            s.Append(cTypes.LF);
+          /*bool bShow = true;
+          for (int j = 0; j < d; ++j)
+          {
+            if (RootMoves[i].m_PV.Count > j && RootMoves[i].m_PV[j] == cMovType.MOV_NAN)
+              bShow = false;
+          }*/
+          if (RootMoves[i].m_PV[0] != cMovType.MOV_NAN)
+          {
+            s.Append("info depth ");
+            s.Append(d);
+            s.Append(" score ");
+            s.Append((i == PVIdx ? cUci.Puntos(v, alpha, beta) : cUci.Puntos(v, -cValoresJuego.INFINITO, cValoresJuego.INFINITO)));
+            s.Append(" nodes ");
+            s.Append(pos.GetNodos());
+            s.Append(" nps ");
+            s.Append((pos.GetNodos() * 1000 / (UInt64)elaspsed).ToString());
+            s.Append(" time ");
+            s.Append(elaspsed);
+            s.Append(" cpuload ");
+            s.Append(Program.m_CPU.Get() * 10);
+            s.Append(" hashfull ");
+            s.Append(cMotor.m_TablaHash.HashFullPercent());
+            //if (bShow)
+            {
+              if (i > 0)
+              {
+                s.Append(" multipv ");
+                s.Append(i + 1);
+              }
+              s.Append(" pv");
+
+              for (int j = 0; RootMoves[i].m_PV.Count > j && RootMoves[i].m_PV[j] != cMovType.MOV_NAN && j < d; ++j)
+              {
+                s.Append(" ");
+                s.Append(cUci.GetMovimiento(RootMoves[i].m_PV[j], pos.IsChess960() != false));
+              }
+            }
+          }
+        }
+      }
+      return s.ToString();
+    }
+
+    public static int Buscar(List<cRaizMov> RootMoves, int firstPos, int lastPos, mov moveToFind)
     {
       for (int i = firstPos; i < lastPos; i++)
       {
@@ -1052,8 +1190,6 @@ namespace Motor
       }
       return -1;
     }
-
-#if BOOK
     public static bool existRootMove(List<cRaizMov> moves, mov m)
     {
       int moveLength = moves.Count;
@@ -1066,6 +1202,7 @@ namespace Motor
       }
       return false;
     }
-#endif
+
+
   }
 }

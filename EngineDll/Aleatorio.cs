@@ -1,4 +1,5 @@
-﻿using System;
+﻿using InOut;
+using System;
 
 //--  RKISS Es un sistema de generación de números pseudoaleatorios para las claves Hash
 //--  George Marsaglia inventó este sistema sobre los 90. Es ThreadSafe
@@ -8,10 +9,10 @@ namespace Types
   //-----------------------------------------------------------------------------------
   public class cAleatorio
   {
-    private static UInt64 a;
-    private static UInt64 b;
-    private static UInt64 c;
-    private static UInt64 d;
+    private UInt64 a;
+    private UInt64 b;
+    private UInt64 c;
+    private UInt64 d;
 
     //-----------------------------------------------------------------------------------
     UInt64 RotarIZQ(UInt64 x, int k)
@@ -30,11 +31,11 @@ namespace Types
     }
 
     //-----------------------------------------------------------------------------------
-    public cAleatorio()
+    public cAleatorio(int seed)
     {
       a = 0xF1EA5EED;
       b = c = d = 0xD4E12C77;
-      for (int i = 0; i < (int)(InOut.cReloj.Now() % 100); ++i)
+      for (int i = 0; i < seed; ++i)
         GetRand();
     }
 
