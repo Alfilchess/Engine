@@ -11,6 +11,8 @@ namespace Motor
   //------------------------------------------------------------------------------
   public class cCpu
   {
+    public static cCpu m_CPU = new cCpu();
+
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool GetSystemTimes(out ComTypes.FILETIME lpIdleTime, out ComTypes.FILETIME lpKernelTime, out ComTypes.FILETIME lpUserTime);
 

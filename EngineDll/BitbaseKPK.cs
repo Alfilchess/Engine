@@ -1,11 +1,7 @@
 ﻿using System;
-using Motor;
 
 using color = System.Int32;
 using sq = System.Int32;
-using colum = System.Int32;
-using fila = System.Int32;
-using bitbrd = System.UInt64;
 
 namespace Types
 {

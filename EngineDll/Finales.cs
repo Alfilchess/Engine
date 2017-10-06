@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Types;
+using Motor;
+using Gaviota;
+using InOut;
 
 using hash = System.UInt64;
 using type = System.Int32;
@@ -11,14 +14,12 @@ using bitbrd = System.UInt64;
 using colum = System.Int32;
 using fila = System.Int32;
 using factor = System.Int32;
-using TableBases;
-using System.Diagnostics;
 
 //-- Sustituir por tabla de finales nalimov en cuanto haya tiempo
-namespace Motor
+namespace Finales
 {
   //-----------------------------------------------------------------------------------------------
-  public delegate Int32 Ejecucion(cPosicion pos);
+  public delegate Int32 Ejecucion(Motor.cPosicion pos);
 
   //-----------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------
@@ -80,6 +81,7 @@ namespace Motor
     public static int[] m_lstValorLejania = new int[] { 0, 5, 20, 40, 60, 80, 90, 100 };
 
     protected color m_cFuerte, m_cDebil;
+    public static int m_nTBHits = 0;
 
     //-----------------------------------------------------------------------------------------------
     public cFinalesBase(color colr, type tipoFinal)
@@ -129,13 +131,13 @@ namespace Motor
 
   //-----------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------
-  public class cFinales
+  public class cListaDeFinales
   {
     private Dictionary<hash, cFinalesBase> m_mapValores = new Dictionary<hash, cFinalesBase>();
     private Dictionary<hash, cFinalesBase> m_mapEscala = new Dictionary<hash, cFinalesBase>();
 
     //-----------------------------------------------------------------------------------------------
-    public cFinales()
+    public cListaDeFinales()
     {
       Insert("KPK", stFinalesTipo.KPK);
       Insert("KNNK", stFinalesTipo.KNNK);
@@ -159,8 +161,8 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public void Insert(string code, type E)
     {
-      GetMapa(E)[cEndgame.GetClave(code, cColor.BLANCO)] = new cEndgame(cColor.BLANCO, E);
-      GetMapa(E)[cEndgame.GetClave(code, cColor.NEGRO)] = new cEndgame(cColor.NEGRO, E);
+      GetMapa(E)[cFinales.GetClave(code, cColor.BLANCO)] = new cFinales(cColor.BLANCO, E);
+      GetMapa(E)[cFinales.GetClave(code, cColor.NEGRO)] = new cFinales(cColor.NEGRO, E);
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -197,10 +199,10 @@ namespace Motor
   //-----------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------
-  public class cEndgame : cFinalesBase
+  public class cFinales : cFinalesBase
   {
     //-----------------------------------------------------------------------------------------------
-    public cEndgame(color c, type E)
+    public cFinales(color c, type E)
       : base(c, E)
     {
       switch (E)
@@ -235,23 +237,27 @@ namespace Motor
     //-----------------------------------------------------------------------------------------------
     public val KXK(cPosicion pos)
     {
+      val result = cValoresJuego.TABLAS;
       if (pos.ColorMueve() == m_cDebil && 0 == (new cReglas(pos, cMovType.LEGAL)).Size())
         return cValoresJuego.TABLAS;
 
       sq posReyGanador = pos.GetRey(m_cFuerte);
       sq posReyPerdedor = pos.GetRey(m_cDebil);
 
-      val result = pos.MaterialPieza(m_cFuerte)
+      if (cTypes.IsCasillaOcupable(posReyGanador) && cTypes.IsCasillaOcupable(posReyPerdedor))
+      {
+        result = pos.MaterialPieza(m_cFuerte)
                    + pos.GetNum(m_cFuerte, cPieza.PEON) * cValoresJuego.PEON_FINAL
                    + m_lstValorBorde[posReyPerdedor]
                    + m_lstValorCerrado[cBitBoard.Distancia(posReyGanador, posReyPerdedor)];
 
-      if (pos.GetNum(m_cFuerte, cPieza.DAMA) != 0
+        if (pos.GetNum(m_cFuerte, cPieza.DAMA) != 0
           || pos.GetNum(m_cFuerte, cPieza.TORRE) != 0
           || (pos.GetNum(m_cFuerte, cPieza.ALFIL) != 0 && pos.GetNum(m_cFuerte, cPieza.CABALLO) != 0)
           || pos.IsAlfilPar(m_cFuerte))
-      {
-        result += cValoresJuego.GANA;
+        {
+          result += cValoresJuego.GANA;
+        }
       }
 
       return m_cFuerte == pos.ColorMueve() ? result : -result;
@@ -261,39 +267,47 @@ namespace Motor
     public val KBNK(cPosicion pos)
     {
 #if TABLEBASES
+      cMotor.m_Threads.mutex.Bloquear();
       color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
       val result = cValoresJuego.TABLAS;
       if(SetConjuntoPiezasPosicion(pos))
       {
-        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+       
+        string strError = "";
+        ProbeResultType pr = EGTB.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, pos.ColorMueve(), enPassantSquare);
         if(pr.found)
         {
-          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          if(pr.stm==MateResult.BlackToMate||pr.stm==MateResult.WhiteToMate)
           {
             if(m_cFuerte==pos.ColorMueve())
               result=(cValoresJuego.MATE-pr.ply);
             else
               result=-cValoresJuego.MATE+pr.ply;
           }
-
+          m_nTBHits++;
         }
+        else
+          cMotor.m_Consola.Print("Exception: " + strError, AccionConsola.NADA);
       }
-
+      cMotor.m_Threads.mutex.Liberar();
       return result;
 #else
+      val result = cValoresJuego.TABLAS;
       sq posReyGanador = pos.GetRey(m_cFuerte);
       sq posReyPerdedor = pos.GetRey(m_cDebil);
-      sq posAlfil = pos.GetList(m_cFuerte, cPieza.ALFIL)[0];
-
-      if (cTypes.IsColorContrario(posAlfil, cCasilla.A1))
+      if (cTypes.IsCasillaOcupable(posReyGanador) && cTypes.IsCasillaOcupable(posReyPerdedor))
       {
-        posReyGanador = cTypes.CasillaVS(posReyGanador);
-        posReyPerdedor = cTypes.CasillaVS(posReyPerdedor);
+        sq posAlfil = pos.GetList(m_cFuerte, cPieza.ALFIL)[0];
+
+        if (cTypes.IsColorContrario(posAlfil, cCasilla.A1))
+        {
+          posReyGanador = cTypes.CasillaVS(posReyGanador);
+          posReyPerdedor = cTypes.CasillaVS(posReyPerdedor);
+        }
+
+        result = cValoresJuego.GANA + m_lstValorCerrado[cBitBoard.Distancia(posReyGanador, posReyPerdedor)]
+                    + m_lstValorEsquinas[posReyPerdedor];
       }
-
-      val result = cValoresJuego.GANA + m_lstValorCerrado[cBitBoard.Distancia(posReyGanador, posReyPerdedor)]
-                  + m_lstValorEsquinas[posReyPerdedor];
-
       return m_cFuerte == pos.ColorMueve() ? result : -result;
 #endif
     }
@@ -303,35 +317,61 @@ namespace Motor
     {
 
 #if TABLEBASES
+      cMotor.m_Threads.mutex.Bloquear();
       color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
       val result = cValoresJuego.TABLAS;
       if(SetConjuntoPiezasPosicion(pos))
       {
-        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
+        string strError = "";
+        ProbeResultType pr = EGTB.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, pos.ColorMueve(), enPassantSquare);
         if(pr.found)
         {
-          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          if(pr.stm==MateResult.BlackToMate||pr.stm==MateResult.WhiteToMate)
           {
             if(m_cFuerte==pos.ColorMueve())
               result=(cValoresJuego.MATE-pr.ply);
             else
               result=-cValoresJuego.MATE+pr.ply;
           }
+          m_nTBHits++;
+        }
+        else
+        {
+          cMotor.m_Consola.Print("Exception: " + strError, AccionConsola.NADA);
+          
+          sq posReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
+          sq posReyNegro = Normalizar(pos, m_cFuerte, pos.GetRey(m_cDebil));
 
+          if (cTypes.IsCasillaOcupable(posReyBlanco) && cTypes.IsCasillaOcupable(posReyNegro))
+          {
+            sq casillaFromPos = Normalizar(pos, m_cFuerte, pos.GetList(m_cFuerte, cPieza.PEON)[0]);
+
+            if (!cBitbaseKPK.Buscar(posReyBlanco, casillaFromPos, posReyNegro, colr))
+              return cValoresJuego.TABLAS;
+
+            result = cValoresJuego.GANA + cValoresJuego.PEON_FINAL + cTypes.Fila(casillaFromPos);
+            result = m_cFuerte == pos.ColorMueve() ? result : -result;
+          }
         }
       }
+      cMotor.m_Threads.mutex.Liberar();
       return result;
 #else
+      val result = cValoresJuego.TABLAS;
       sq posReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
       sq posReyNegro = Normalizar(pos, m_cFuerte, pos.GetRey(m_cDebil));
-      sq casillaFromPos = Normalizar(pos, m_cFuerte, pos.GetList(m_cFuerte, cPieza.PEON)[0]);
 
-      color colr = m_cFuerte == pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+      if (cTypes.IsCasillaOcupable(posReyBlanco) && cTypes.IsCasillaOcupable(posReyNegro))
+      {
+        sq casillaFromPos = Normalizar(pos, m_cFuerte, pos.GetList(m_cFuerte, cPieza.PEON)[0]);
 
-      if (!cBitbaseKPK.Buscar(posReyBlanco, casillaFromPos, posReyNegro, colr))
-        return cValoresJuego.TABLAS;
+        color colr = m_cFuerte == pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
 
-      val result = cValoresJuego.GANA + cValoresJuego.PEON_FINAL + cTypes.Fila(casillaFromPos);
+        if (!cBitbaseKPK.Buscar(posReyBlanco, casillaFromPos, posReyNegro, colr))
+          return cValoresJuego.TABLAS;
+
+        result = cValoresJuego.GANA + cValoresJuego.PEON_FINAL + cTypes.Fila(casillaFromPos);
+      }
 
       return m_cFuerte == pos.ColorMueve() ? result : -result;
 
@@ -370,23 +410,34 @@ namespace Motor
     public val KRKB(cPosicion pos)
     {
 #if TABLEBASES
+      cMotor.m_Threads.mutex.Bloquear();
       color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
       val result = cValoresJuego.TABLAS;
       if(SetConjuntoPiezasPosicion(pos))
       {
-        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
-        if(pr.found)
+        string strError = "";
+        
+        ProbeResultType pr = EGTB.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, pos.ColorMueve(), enPassantSquare);
+        if (pr.found)
         {
-          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          pos.DibujaTablero();
+          if (pr.stm == MateResult.BlackToMate || pr.stm == MateResult.WhiteToMate)
           {
-            if(m_cFuerte==pos.ColorMueve())
-              result=(cValoresJuego.MATE-pr.ply);
+            if (m_cFuerte == pos.ColorMueve())
+              result = (cValoresJuego.MATE - pr.ply);
             else
-              result=-cValoresJuego.MATE+pr.ply;
+              result = -cValoresJuego.MATE + pr.ply;
           }
-
+          m_nTBHits++;
+        }
+        else
+        {
+          cMotor.m_Consola.Print("Exception: " + strError, AccionConsola.NADA);
+          result = (m_lstValorBorde[pos.GetRey(m_cDebil)]);
+          result = m_cFuerte == pos.ColorMueve() ? result : -result;
         }
       }
+      cMotor.m_Threads.mutex.Liberar();
       return result;
 #else
       val result = (m_lstValorBorde[pos.GetRey(m_cDebil)]);
@@ -423,23 +474,39 @@ namespace Motor
     public val KQKR(cPosicion pos)
     {
 #if TABLEBASES
+      cMotor.m_Threads.mutex.Bloquear();
       color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
       val result = cValoresJuego.TABLAS;
       if(SetConjuntoPiezasPosicion(pos))
       {
-        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
-        if(pr.found)
+        string strError = "";
+        ProbeResultType pr = EGTB.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, pos.ColorMueve(), enPassantSquare);
+        if (pr.found)
         {
-          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
+          if (pr.stm == MateResult.BlackToMate || pr.stm == MateResult.WhiteToMate)
           {
-            if (m_cFuerte==pos.ColorMueve())
-              result=(cValoresJuego.MATE-pr.ply);
+            if (m_cFuerte == pos.ColorMueve())
+              result = (cValoresJuego.MATE - pr.ply);
             else
-              result=-cValoresJuego.MATE+pr.ply;
+              result = -cValoresJuego.MATE + pr.ply;
           }
-            
+          m_nTBHits++;
+        }
+        else
+        {
+          cMotor.m_Consola.Print("Exception: " + strError, AccionConsola.NADA);
+          sq winnerKSq = pos.GetRey(m_cFuerte);
+          sq loserKSq = pos.GetRey(m_cDebil);
+
+          result = cValoresJuego.DAMA_FINAL
+                      - cValoresJuego.TORRE_FINAL
+                      + m_lstValorBorde[loserKSq]
+                      + m_lstValorCerrado[cBitBoard.Distancia(winnerKSq, loserKSq)];
+
+          result = m_cFuerte == pos.ColorMueve() ? result : -result;
         }
       }
+      cMotor.m_Threads.mutex.Liberar();
       return result;
 #else
       sq winnerKSq = pos.GetRey(m_cFuerte);
@@ -488,7 +555,7 @@ namespace Motor
         sq bishonCasillaPeon = pos.GetList(m_cFuerte, cPieza.ALFIL)[0];
 
         if (cTypes.FilaProxima(m_cFuerte, weaksqPeon) == FILA.F7
-            && (pos.PiezasColor(m_cFuerte, cPieza.PEON) & cBitBoard.m_nCasillas[(weaksqPeon + cTypes.AtaquePeon(m_cDebil))]) != 0
+            && (pos.PiezasColor(m_cFuerte, cPieza.PEON) & cBitBoard.m_nCasillas[(weaksqPeon + cTypes.AvancePeon(m_cDebil))]) != 0
             && (cTypes.IsColorContrario(bishonCasillaPeon, weaksqPeon) || pos.GetNum(m_cFuerte, cPieza.PEON) == 1))
         {
           int strongKingDist = cBitBoard.Distancia(weaksqPeon, strongKingSq);
@@ -597,7 +664,7 @@ namespace Motor
         sq bsq = pos.GetList(m_cDebil, cPieza.ALFIL)[0];
         sq nCasillaPeon = pos.GetList(m_cFuerte, cPieza.PEON)[0];
         fila rk = cTypes.FilaProxima(m_cFuerte, nCasillaPeon);
-        sq push = cTypes.AtaquePeon(m_cFuerte);
+        sq push = cTypes.AvancePeon(m_cFuerte);
 
         if (rk == FILA.F5 && !cTypes.IsColorContrario(bsq, nCasillaPeon))
         {
@@ -715,12 +782,12 @@ namespace Motor
 
       if (cTypes.FilaProxima(m_cFuerte, nCasillaPeon1) > cTypes.FilaProxima(m_cFuerte, nCasillaPeon2))
       {
-        blockSq1 = nCasillaPeon1 + cTypes.AtaquePeon(m_cFuerte);
+        blockSq1 = nCasillaPeon1 + cTypes.AvancePeon(m_cFuerte);
         blockSq2 = cTypes.CreaCasilla(cTypes.Columna(nCasillaPeon2), cTypes.Fila(nCasillaPeon1));
       }
       else
       {
-        blockSq1 = nCasillaPeon2 + cTypes.AtaquePeon(m_cFuerte);
+        blockSq1 = nCasillaPeon2 + cTypes.AvancePeon(m_cFuerte);
         blockSq2 = cTypes.CreaCasilla(cTypes.Columna(nCasillaPeon1), cTypes.Fila(nCasillaPeon2));
       }
 
@@ -799,17 +866,35 @@ namespace Motor
     public factor KPKP(cPosicion pos)
     {
 #if TABLEBASES
+      cMotor.m_Threads.mutex.Bloquear();
       color colr = m_cFuerte==pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
       val result = cFactorEscala.TABLAS;
       if(SetConjuntoPiezasPosicion(pos))
       {
-        ProbeResultType pr = cTablaFinales.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, colr, enPassantSquare);
-        if(pr.found)
+        string strError = "";
+        ProbeResultType pr = EGTB.Probe(whitePieceSquares, blackPieceSquares, whiteTypesSquares, blackTypesSquares, pos.ColorMueve(), enPassantSquare);
+        if (pr.found)
         {
-          if(pr.stm==MateResult.MATE_NEGRAS||pr.stm==MateResult.MATE_BLANCAS)
-            result=cFactorEscala.NAN;
+          if (pr.stm == MateResult.BlackToMate || pr.stm == MateResult.WhiteToMate)
+            result = cFactorEscala.NAN;
+          m_nTBHits++;
+        }
+        else
+        {
+          cMotor.m_Consola.Print("Exception: " + strError, AccionConsola.NADA);
+          sq nCasillaReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
+          sq nCasillaReyNegro = Normalizar(pos, m_cFuerte, pos.GetRey(m_cDebil));
+          sq nCasillaPeon = Normalizar(pos, m_cFuerte, pos.GetList(m_cFuerte, cPieza.PEON)[0]);
+
+          color us = m_cFuerte == pos.ColorMueve() ? cColor.BLANCO : cColor.NEGRO;
+
+          if (cTypes.Fila(nCasillaPeon) >= FILA.F5 && cTypes.Columna(nCasillaPeon) != COLUMNA.A)
+            return cFactorEscala.NAN;
+
+          return cBitbaseKPK.Buscar(nCasillaReyBlanco, nCasillaPeon, nCasillaReyNegro, us) ? cFactorEscala.NAN : cFactorEscala.TABLAS;
         }
       }
+      cMotor.m_Threads.mutex.Liberar();
       return result;
 #else
       sq nCasillaReyBlanco = Normalizar(pos, m_cFuerte, pos.GetRey(m_cFuerte));
@@ -853,10 +938,8 @@ namespace Motor
       }
       catch(Exception ex)
       {
-#if DEBUG
-        Debug.Write(ex.Message);
-#endif
-
+        //Debug.Write(ex.Message);
+        cMotor.m_Consola.Print("Exception: " + ex.Message, AccionConsola.NADA);
       }
       enPassantSquare = pos.CasillaEnPaso();
       whosTurn = pos.ColorMueve();
@@ -877,38 +960,38 @@ namespace Motor
       blackTypesSquares.Clear();
 
       if(fen.Contains("a3"))
-        enPassantSquare=cTablaFinales.a8toa1[40];
+        enPassantSquare=EGTB.a8toa1[40];
       else if(fen.Contains("b3"))
-        enPassantSquare=cTablaFinales.a8toa1[41];
+        enPassantSquare=EGTB.a8toa1[41];
       else if(fen.Contains("c3"))
-        enPassantSquare=cTablaFinales.a8toa1[42];
+        enPassantSquare=EGTB.a8toa1[42];
       else if(fen.Contains("d3"))
-        enPassantSquare=cTablaFinales.a8toa1[43];
+        enPassantSquare=EGTB.a8toa1[43];
       else if(fen.Contains("e3"))
-        enPassantSquare=cTablaFinales.a8toa1[44];
+        enPassantSquare=EGTB.a8toa1[44];
       else if(fen.Contains("f3"))
-        enPassantSquare=cTablaFinales.a8toa1[45];
+        enPassantSquare=EGTB.a8toa1[45];
       else if(fen.Contains("g3"))
-        enPassantSquare=cTablaFinales.a8toa1[46];
+        enPassantSquare=EGTB.a8toa1[46];
       else if(fen.Contains("h3"))
-        enPassantSquare=cTablaFinales.a8toa1[47];
+        enPassantSquare=EGTB.a8toa1[47];
 
       if(fen.Contains("a6"))
-        enPassantSquare=cTablaFinales.a8toa1[16];
+        enPassantSquare=EGTB.a8toa1[16];
       else if(fen.Contains("b6"))
-        enPassantSquare=cTablaFinales.a8toa1[17];
+        enPassantSquare=EGTB.a8toa1[17];
       else if(fen.Contains("c6"))
-        enPassantSquare=cTablaFinales.a8toa1[18];
+        enPassantSquare=EGTB.a8toa1[18];
       else if(fen.Contains("d6"))
-        enPassantSquare=cTablaFinales.a8toa1[19];
+        enPassantSquare=EGTB.a8toa1[19];
       else if(fen.Contains("e6"))
-        enPassantSquare=cTablaFinales.a8toa1[20];
+        enPassantSquare=EGTB.a8toa1[20];
       else if(fen.Contains("f6"))
-        enPassantSquare=cTablaFinales.a8toa1[21];
+        enPassantSquare=EGTB.a8toa1[21];
       else if(fen.Contains("g6"))
-        enPassantSquare=cTablaFinales.a8toa1[22];
+        enPassantSquare=EGTB.a8toa1[22];
       else if(fen.Contains("h6"))
-        enPassantSquare=cTablaFinales.a8toa1[23];
+        enPassantSquare=EGTB.a8toa1[23];
 
       foreach(char c in fen)
       {
@@ -948,74 +1031,74 @@ namespace Motor
           }
           else if(c=='P')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.PAWN);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.PAWN);
             index++;
           }
           else if(c=='N')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.KNIGHT);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.KNIGHT);
             index++;
           }
           else if(c=='B')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.BISHOP);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.BISHOP);
             index++;
           }
           else if(c=='R')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.ROOK);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.ROOK);
             index++;
           }
           else if(c=='Q')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.QUEEN);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.QUEEN);
             index++;
           }
           else if(c=='K')
           {
-            whitePieceSquares.Add(cTablaFinales.a8toa1[index]);
-            whiteTypesSquares.Add(cTablaFinales.KING);
+            whitePieceSquares.Add(EGTB.a8toa1[index]);
+            whiteTypesSquares.Add(EGTB.KING);
             index++;
           }
           else if(c=='p')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.PAWN);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.PAWN);
             index++;
           }
           else if(c=='n')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.KNIGHT);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.KNIGHT);
             index++;
           }
           else if(c=='b')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.BISHOP);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.BISHOP);
             index++;
           }
           else if(c=='r')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.ROOK);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.ROOK);
             index++;
           }
           else if(c=='q')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.QUEEN);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.QUEEN);
             index++;
           }
           else if(c=='k')
           {
-            blackPieceSquares.Add(cTablaFinales.a8toa1[index]);
-            blackTypesSquares.Add(cTablaFinales.KING);
+            blackPieceSquares.Add(EGTB.a8toa1[index]);
+            blackTypesSquares.Add(EGTB.KING);
             index++;
           }
           else if(c=='/')

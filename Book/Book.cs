@@ -1,14 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Reflection;
-using System.Resources;
 
 using hash = System.UInt64;
-using bitbrd = System.UInt64;
-using mov = System.Int32;
-using sq = System.Int32;
-using pieza = System.Int32;
 using System.Diagnostics;
 
 namespace Book
@@ -29,7 +23,7 @@ namespace Book
 
     //-- Números aleatorios de PolyGlot, utilizados para calcular las claves hash del libro 
     public const long SIZE_OF_BOOKENTRY = 16;
-    public static readonly hash[] PG = new hash[781]{
+    public static hash[] PG = new hash[781]{
        (0x9D39247E33776D41), (0x2AF7398005AAA5C7), (0x44DB015024623547), (0x9C15F73E62A76AE2),
        (0x75834465489C0C89), (0x3290AC3A203001BF), (0x0FBBAD1F61042279), (0xE83A908FF2FB60CA),
        (0x0D7E765D58755C10), (0x1A083822CEAFE02D), (0x9605D5F0E25EC3B0), (0xD021FF5CD13A2ED5),
@@ -320,9 +314,7 @@ namespace Book
       }
       catch (Exception ex)
       {
-#if DEBUG
         Debug.Write(ex.Message);
-#endif
         return false;
       }
 

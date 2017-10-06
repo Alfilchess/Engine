@@ -1,8 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.IO.Compression;
-using System.Reflection;
-using System.Resources;
 
 using Types;
 using Motor;
@@ -27,7 +24,7 @@ namespace Book
     //------------------------------------------------------------------------------------
     public cLibro()
     {
-      m_Rand = new cAleatorio((int)(InOut.cReloj.Now() % 1000));
+      m_Rand = new cAleatorio();
     }
     
     //------------------------------------------------------------------------------------

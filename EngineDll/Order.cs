@@ -1,23 +1,22 @@
-﻿using System;
-using Types;
+﻿using Types;
 
 using val = System.Int32;
-using pieza = System.Int32;
 using sq = System.Int32;
 using mov = System.Int32;
 using ply = System.Int32;
 using type = System.Int32;
+using static Motor.cReglas;
 
 //-----------------------------------------------------------------------------------------------------------------
 namespace Motor
 {
   //-----------------------------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------------------------
-  public class cMovOrder
+  public class cListaOrdenadaMov
   {
     public cPosicion m_Pos;
     public cHistorial m_Historial;
-    public cStackMov m_Pila;
+    public cPilaMov m_Pila;
     public mov[] m_lstMovs;
     public mov[] m_lstFollows;
     public ply m_nPly;
@@ -30,7 +29,7 @@ namespace Motor
     public cMov[] m_lstMov = new cMov[cReglas.MAX_MOVES + 6];
 
     //-----------------------------------------------------------------------------------------------------------------
-    public cMovOrder(cPosicion p, mov ttm, ply d, cHistorial h, mov[] cm, mov[] fm, cStackMov s)
+    public cListaOrdenadaMov(cPosicion p, mov ttm, ply d, cHistorial h, mov[] cm, mov[] fm, cPilaMov s)
     {
       m_Pos = p;
       m_Historial = h;
@@ -47,12 +46,12 @@ namespace Motor
       else
         m_nEstado = cEstado.MAIN_SEARCH;
 
-      m_TTMov = (ttm != 0 && m_Pos.IsPseudoLegalMov(ttm) ? ttm : cMovType.MOV_NAN);
+      m_TTMov = (ttm != 0 && m_Pos.IsMovPseudoLegal(ttm) ? ttm : cMovType.MOV_NAN);
       end += ((m_TTMov != cMovType.MOV_NAN) ? 1 : 0);
     }
 
     //-----------------------------------------------------------------------------------------------------------------
-    public cMovOrder(cPosicion p, mov ttm, ply d, cHistorial h, sq sq)
+    public cListaOrdenadaMov(cPosicion p, mov ttm, ply d, cHistorial h, sq sq)
     {
       m_Pos = p;
       m_Historial = h;
@@ -79,12 +78,12 @@ namespace Motor
         ttm = cMovType.MOV_NAN;
       }
 
-      m_TTMov = (ttm != 0 && m_Pos.IsPseudoLegalMov(ttm) ? ttm : cMovType.MOV_NAN);
+      m_TTMov = (ttm != 0 && m_Pos.IsMovPseudoLegal(ttm) ? ttm : cMovType.MOV_NAN);
       end += ((m_TTMov != cMovType.MOV_NAN) ? 1 : 0);
     }
 
     //-----------------------------------------------------------------------------------------------------------------
-    public cMovOrder(cPosicion p, mov ttm, cHistorial h, type pt)
+    public cListaOrdenadaMov(cPosicion p, mov ttm, cHistorial h, type pt)
     {
       m_Pos = p;
       m_Historial = h;
@@ -94,7 +93,7 @@ namespace Motor
       m_nEstado = cEstado.PROBCUT;
 
       captureThreshold = cPosicion.m_nValPieza[cFaseJuego.FASE_MEDIOJUEGO][pt];
-      m_TTMov = (ttm != 0 && m_Pos.IsPseudoLegalMov(ttm) ? ttm : cMovType.MOV_NAN);
+      m_TTMov = (ttm != 0 && m_Pos.IsMovPseudoLegal(ttm) ? ttm : cMovType.MOV_NAN);
 
       if (m_TTMov != 0 && (!m_Pos.IsCaptura(m_TTMov) || m_Pos.SEE(m_TTMov) <= captureThreshold))
         m_TTMov = cMovType.MOV_NAN;
@@ -337,7 +336,7 @@ namespace Motor
             move = m_lstMov[cur++].m;
             if (move != cMovType.MOV_NAN
                 && move != m_TTMov
-                && m_Pos.IsPseudoLegalMov(move)
+                && m_Pos.IsMovPseudoLegal(move)
                 && !m_Pos.IsCaptura(move))
               return move;
             break;
@@ -403,124 +402,7 @@ namespace Motor
   }
 
   //-----------------------------------------------------------------------------------------------------------------
-  //-----------------------------------------------------------------------------------------------------------------
-  public abstract class cStadisticas<T>
-  {
-    public const val MAX = 2000;
-
-    public T[][] m_Tabla = new T[cPieza.COLORES][] { 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES], 
-      new T[cCasilla.ESCAQUES] };
-
-    //-----------------------------------------------------------------------------------------------------------------
-    public T[] this[pieza pc]
-    {
-      get
-      {
-        return m_Tabla[pc];
-      }
-
-      set
-      {
-        m_Tabla[pc] = value;
-      }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------
-    public void Clear()
-    {
-      Array.Clear(m_Tabla[0], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[1], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[2], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[3], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[4], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[5], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[6], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[7], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[8], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[9], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[10], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[11], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[12], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[13], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[14], 0, cCasilla.ESCAQUES);
-      Array.Clear(m_Tabla[15], 0, cCasilla.ESCAQUES);
-
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------
-    public abstract void Fill(pieza pc, sq to, val v);
-  }
-
-  //-----------------------------------------------------------------------------------------------------------------
-  //-----------------------------------------------------------------------------------------------------------------
-  public class cBeneficios : cStadisticas<val>
-  {
-    public override void Fill(pieza pc, sq to, val v)
-    {
-      m_Tabla[pc][to] = Math.Max(v, m_Tabla[pc][to] - 1);
-    }
-  }
-
-  //-----------------------------------------------------------------------------------------------------------------
-  public class cHistorial : cStadisticas<val>
-  {
-    public override void Fill(pieza pc, sq to, val v)
-    {
-      if (Math.Abs(m_Tabla[pc][to] + v) < MAX)
-        m_Tabla[pc][to] += v;
-    }
-  }
-
-  //-----------------------------------------------------------------------------------------------------------------
-  public struct Pair
-  {
-    public mov m_Key1;
-    public mov m_Key2;
-  }
-
-  //-----------------------------------------------------------------------------------------------------------------
-  //-----------------------------------------------------------------------------------------------------------------
-  public class cMovs : cStadisticas<Pair>
-  {
-    public override void Fill(pieza pc, sq to, mov m)
-    {
-      if (m == m_Tabla[pc][to].m_Key1)
-        return;
-
-      m_Tabla[pc][to].m_Key2 = m_Tabla[pc][to].m_Key1;
-      m_Tabla[pc][to].m_Key1 = m;
-    }
-  }
-
-  //-----------------------------------------------------------------------------------------------------------------
-  public struct cEstado
-  {
-    public const int MAIN_SEARCH = 0, CAPTURES_S1 = 1, KILLERS_S1 = 2, QUIETS_1_S1 = 3, QUIETS_2_S1 = 4, BAD_CAPTURES_S1 = 5;
-    public const int EVASION = 6, EVASIONS_S2 = 7;
-    public const int QSEARCH_0 = 8, CAPTURES_S3 = 9, QUIET_CHECKS_S3 = 10;
-    public const int QSEARCH_1 = 11, CAPTURES_S4 = 12;
-    public const int PROBCUT = 13, CAPTURES_S5 = 14;
-    public const int RECAPTURE = 15, CAPTURES_S6 = 16;
-    public const int STOP = 17;
-  };
-
-  //-----------------------------------------------------------------------------------------------------------------
-  public class cStackMov
+  public class cPilaMov
   {
     public cSplitPoint splitPoint;
     public int ply;
@@ -548,7 +430,7 @@ namespace Motor
     }
 
     //-----------------------------------------------------------------------------------------------------------------
-    public void From(cStackMov s)
+    public void From(cPilaMov s)
     {
 
       ply = s.ply;
@@ -561,6 +443,33 @@ namespace Motor
       staticEval = s.staticEval;
       skipNullMove = s.skipNullMove;
     }
-  }
 
+    //-----------------------------------------------------------------------------------------------------------------
+    public static void ActualizarPila(cPosicion pos, cPilaMov[] ss, int ssPos, mov move, ply depth, mov[] quiets, int quietsCnt)
+    {
+      if (ss[ssPos].killers0 != move)
+      {
+        ss[ssPos].killers1 = ss[ssPos].killers0;
+        ss[ssPos].killers0 = move;
+      }
+
+      val bonus = ((depth) * (depth));
+      cSearch.m_Historial.Fill(pos.GetPiezaMovida(move), cTypes.GetToCasilla(move), bonus);
+      for (int i = 0; i < quietsCnt; ++i)
+      {
+        mov m = quiets[i];
+        cSearch.m_Historial.Fill(pos.GetPiezaMovida(m), cTypes.GetToCasilla(m), -bonus);
+      }
+      if (cTypes.is_ok_move(ss[ssPos - 1].currentMove))
+      {
+        sq prevMoveSq = cTypes.GetToCasilla(ss[ssPos - 1].currentMove);
+        cSearch.Countermoves.Fill(pos.GetPieza(prevMoveSq), prevMoveSq, move);
+      }
+      if (cTypes.is_ok_move(ss[ssPos - 2].currentMove) && ss[ssPos - 1].currentMove == ss[ssPos - 1].ttMove)
+      {
+        sq prevOwnMoveSq = cTypes.GetToCasilla(ss[ssPos - 2].currentMove);
+        cSearch.Followupmoves.Fill(pos.GetPieza(prevOwnMoveSq), prevOwnMoveSq, move);
+      }
+    }
+  }
 }
