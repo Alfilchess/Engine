@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;BOOK;TABLEBASES</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -42,35 +42,24 @@
     <Compile Include="AlfaBeta.cs" />
     <Compile Include="BitbaseKPK.cs" />
     <Compile Include="BitBoard.cs" />
-    <Compile Include="ChessariaOpen.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Consola.cs" />
     <Compile Include="Cpu.cs" />
-    <Compile Include="Estadisticas.cs" />
     <Compile Include="Eval.cs" />
     <Compile Include="Finales.cs" />
     <Compile Include="Hash.cs" />
-    <Compile Include="HashTable.cs" />
-    <Compile Include="JaqueInfo.cs" />
-    <Compile Include="Lct2.cs" />
     <Compile Include="Libro.cs" />
-    <Compile Include="ListaPV.cs" />
     <Compile Include="Material.cs" />
-    <Compile Include="MonteCarlo.cs" />
     <Compile Include="Motor.cs" />
-    <Compile Include="OptConfig.cs" />
     <Compile Include="Order.cs" />
-    <Compile Include="PeonesBonus.cs" />
-    <Compile Include="PeonesEstructura.cs" />
+    <Compile Include="Peones.cs" />
     <Compile Include="Pos.cs" />
-    <Compile Include="posinfo.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reglas.cs" />
     <Compile Include="Reloj.cs" />
     <Compile Include="Tablero.cs" />
     <Compile Include="Thread.cs" />
-    <Compile Include="ThreadPool.cs" />
-    <Compile Include="ThreadUtils.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="Uci.cs" />
   </ItemGroup>
@@ -79,17 +68,9 @@
       <Project>{cf6033e9-a7aa-49b3-88fa-aaaed57a3342}</Project>
       <Name>Book</Name>
     </ProjectReference>
-    <ProjectReference Include="..\egtb\egtb.csproj">
-      <Project>{7c0d287f-7a70-4420-b968-a8284a1e6994}</Project>
-      <Name>egtb</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LZMA\LZMA.csproj">
-      <Project>{04a7e605-70bc-4a97-8f56-00a3f59bcc1d}</Project>
-      <Name>LZMA</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\pwned_common\pwned_common.csproj">
-      <Project>{cec94863-a1b7-4d52-aeb5-9d8e387a1155}</Project>
-      <Name>pwned_common</Name>
+    <ProjectReference Include="..\TableBases\TableBases.csproj">
+      <Project>{f4769bd3-985f-46ec-b8f1-6fc4922235ed}</Project>
+      <Name>TableBases</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
