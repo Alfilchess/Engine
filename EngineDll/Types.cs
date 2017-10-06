@@ -13,6 +13,7 @@ using fila = System.Int32;
 using pieza = System.Int32;
 using type = System.Int32;
 using ply = System.Int32;
+using static Motor.cReglas;
 
 namespace Types
 {
@@ -154,7 +155,7 @@ namespace Types
     //---------------------------------------------------------------------------------------
     public static bool IsColorContrario(pos s1, pos s2)
     {
-      
+
 
       int s = (int)s1 ^ (int)s2;
       return (((s >> 3) ^ s) & 1) != 0;
@@ -174,7 +175,7 @@ namespace Types
     }
 
     //---------------------------------------------------------------------------------------
-    public static pos AtaquePeon(color c)
+    public static pos AvancePeon(color c)
     {
       return c == cColor.BLANCO ? cCasilla.NORTE : cCasilla.SUR;
     }
@@ -205,7 +206,8 @@ namespace Types
     //---------------------------------------------------------------------------------------
     public static mov CreaMov(pos from, pos to)
     {
-        return (to | (from << 6));
+
+      return (to | (from << 6));
     }
 
     //---------------------------------------------------------------------------------------
@@ -325,11 +327,12 @@ namespace Types
   //---------------------------------------------------------------------------------------
   public class cPieza
   {
-    public const pieza NAN = 0, PEON = 1, CABALLO = 2, ALFIL = 3, TORRE = 4, DAMA = 5, REY = 6, MAXSIZE = 6;
+    public const pieza NAN = 0, PEON = 1, CABALLO = 2, ALFIL = 3, TORRE = 4, DAMA = 5, REY = 6, MAXSIZE = 6, TESORO = 7;
     public const pieza SIZE = 8;
-    public const pieza SIZE2 = 16;
-    public const pieza PEON_BLANCO = 1, CABALLO_BLANCO = 2, ALFIL_BLANCO = 3, TORRE_BLANCO = 4, DAMA_BLANCO = 5, REY_BLANCO = 6;
-    public const pieza PEON_NEGRO = 9, CABALLO_NEGRO = 10, ALFIL_NEGRO = 11, TORRE_NEGRO = 12, DAMA_NEGRO = 13, REY_NEGRO = 14;
+    public const pieza MAX = 16;
+    public const pieza MAXNUM = 64;
+    public const pieza PEON_BLANCO = 1, CABALLO_BLANCO = 2, ALFIL_BLANCO = 3, TORRE_BLANCO = 4, DAMA_BLANCO = 5, REY_BLANCO = 6, TESORO_BLANCO = 7;
+    public const pieza PEON_NEGRO = 9, CABALLO_NEGRO = 10, ALFIL_NEGRO = 11, TORRE_NEGRO = 12, DAMA_NEGRO = 13, REY_NEGRO = 14, TESORO_NEGRO = 15;
     public const pieza COLORES = 16;
   };
 

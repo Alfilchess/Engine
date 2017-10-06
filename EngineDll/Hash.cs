@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Types;
 
 using val = System.Int32;
@@ -7,12 +6,13 @@ using borde = System.Int32;
 using ply = System.Int32;
 using mov = System.Int32;
 using hash = System.UInt64;
+using System.Collections.Generic;
 
 namespace Motor
 {
   //----------------------------------------------------------------------------------------
   //----------------------------------------------------------------------------------------
-  public class cHashZobrist
+  public class cHashEstaticas
   {
     public static hash[][][] m_sqPeon = new hash[cColor.SIZE][][];
     public static hash[] m_EnPaso = new hash[COLUMNA.OUT];
@@ -20,7 +20,7 @@ namespace Motor
     public static hash m_Bando;
     public static hash m_Exclusion;
   }
-
+  /*
   //----------------------------------------------------------------------------------------
   //----------------------------------------------------------------------------------------
   public class cHashTable<Entry>
@@ -47,16 +47,22 @@ namespace Motor
         m_TablaHash[(int)((UInt32)k & (UInt32)(Size - 1))] = value;
       }
     }
-  }
+  }*/
 
   //----------------------------------------------------------------------------------------
   //----------------------------------------------------------------------------------------
-  public class cTablaHashStruct
+  public class cTablaHashItem
   {
     private UInt32 m_nClave;
     private UInt16 m_nMove;
     public Byte m_nBound, m_nIteraccion;
     private Int16 m_nValue, m_nDepth, m_nValueEval;
+
+    //----------------------------------------------------------------------------------------
+    public cTablaHashItem()
+    {
+      Clear();
+    }
 
     //----------------------------------------------------------------------------------------
     public void Save(UInt32 clave, val valor, borde b, ply depth, mov m, Byte iteraccion, val valorEval)
@@ -129,8 +135,8 @@ namespace Motor
   //----------------------------------------------------------------------------------------
   public class cTablaHash
   {
-    //public List<cTablaHashStruct> m_lstTabla;
-    public cTablaHashStruct[] m_lstTabla;
+    //public List<cTablaHashItem> m_lstTabla = new List<cTablaHashItem>();
+    public cTablaHashItem[] m_lstTabla = null;
 
     public const uint CLUSTER_SIZE = 4;
     private UInt32 m_nMask;
@@ -165,12 +171,14 @@ namespace Motor
 
       m_nMask = m_nHashSize - CLUSTER_SIZE;
 
-      //m_lstTabla = null;
-      //m_lstTabla = new List<cTablaHashStruct>((int)m_nHashSize);
-      m_lstTabla = new cTablaHashStruct[m_nHashSize];
+      m_lstTabla = null;
+      GC.Collect();
+
+      //m_lstTabla = new List<cTablaHashItem>((int)m_nHashSize);
+      m_lstTabla = new cTablaHashItem[m_nHashSize];
       for (int i = 0; i < m_nHashSize; i++)
-        //m_lstTabla.Add(new cTablaHashStruct());
-        m_lstTabla[i] = new cTablaHashStruct();
+        //m_lstTabla.Add(new cTablaHashItem());
+        m_lstTabla[i] = new cTablaHashItem();
     }
 
     //----------------------------------------------------------------------------------------
@@ -179,15 +187,21 @@ namespace Motor
       if (m_lstTabla != null)
       {
         m_nHashFull = 0;
-        for (int i = 0; i < m_lstTabla.Length; i++)
-        {
-          m_lstTabla[i].Clear();
-        }
+
+        cMotor.m_TablaHash.Init((ulong)cMotor.m_mapConfig["Hash"].Get());
+        /*
+         *for (int i = 0; i < m_nHashSize; i++)
+         {
+           m_lstTabla[i].Clear();
+             Array.Clear(m_lstTabla, 0, m_lstTabla.Length);
+         }
+        */
+
       }
     }
 
     //-----------------------------------------------------------------------------------
-    public cTablaHashStruct Buscar(hash clave)
+    public cTablaHashItem Buscar(hash clave)
     {
       int tte = First(clave);
       UInt32 nClave = (UInt32)(clave >> 32);
@@ -196,7 +210,7 @@ namespace Motor
         uint i = 0;
         while (i < CLUSTER_SIZE)
         {
-          if (m_lstTabla[tte].GetClave() == nClave)
+          if (m_lstTabla[tte] != null && m_lstTabla[tte].GetClave() == nClave)
           {
             m_lstTabla[tte].m_nIteraccion = m_nIteraccion;
             return m_lstTabla[tte];
@@ -212,7 +226,7 @@ namespace Motor
     public void Save(hash clave, val valor, borde b, ply d, mov m, val statV)
     {
       int nIndice, nIndiceReemplazar;
-      cTablaHashStruct claveExistente, claveAReemplazar;
+      cTablaHashItem claveExistente, claveAReemplazar;
       UInt32 nClave = (UInt32)(clave >> 32);
 
       if (m_lstTabla != null)
@@ -220,26 +234,33 @@ namespace Motor
         nIndice = nIndiceReemplazar = First(clave);
         claveAReemplazar = m_lstTabla[nIndiceReemplazar];
 
+
         for (uint i = 0; i < CLUSTER_SIZE; ++i, ++nIndice)
         {
-          claveExistente = m_lstTabla[nIndice];
-          if (claveExistente.GetClave() == 0 || claveExistente.GetClave() == nClave)
+          if (m_lstTabla[nIndice] != null)
           {
-            if (m == 0)
-              m = claveExistente.GetMove();
+            claveExistente = m_lstTabla[nIndice];
+            if (claveExistente.GetClave() == 0 || claveExistente.GetClave() == nClave)
+            {
+              if (m == 0)
+                m = claveExistente.GetMove();
 
-            claveAReemplazar = claveExistente;
-            break;
+              claveAReemplazar = claveExistente;
+              break;
+            }
+
+            //-- Casos de reemplazo de la clave Hash
+            if (claveAReemplazar != claveExistente && (claveExistente.GetIteraccion() == m_nIteraccion || (claveExistente.GetBound() == cBordes.BOUND_EXACT &&
+                (claveAReemplazar.GetIteraccion() == m_nIteraccion || claveExistente.GetDepth() < claveAReemplazar.GetDepth()))))
+              claveAReemplazar = claveExistente;
           }
 
-          //-- Casos de reemplazo de la clave Hash
-          if (claveAReemplazar != claveExistente && (claveExistente.GetIteraccion() == m_nIteraccion || (claveExistente.GetBound() == cBordes.BOUND_EXACT &&
-            (claveAReemplazar.GetIteraccion() == m_nIteraccion || claveExistente.GetDepth() < claveAReemplazar.GetDepth()))))
-            claveAReemplazar = claveExistente;
         }
 
         m_nHashFull++;
-        claveAReemplazar.Save(nClave, valor, b, d, m, m_nIteraccion, statV);
+        if (claveAReemplazar != null)
+          claveAReemplazar.Save(nClave, valor, b, d, m, m_nIteraccion, statV);
+
       }
     }
 
@@ -247,7 +268,7 @@ namespace Motor
     public uint HashFullPercent()
     {
       if (m_nHashFull <= m_nHashSize)
-        return (uint)((m_nHashFull / (float)m_nHashSize) * 1000.0);
+        return (uint)((m_nHashFull / (double)m_nHashSize) * 1000.0);
       else
         return 1000;
     }
