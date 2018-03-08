@@ -2,6 +2,8 @@
 Chess Engine Alfil sf Battles in C# (new UCI protocol and modifications for Chessaria AICE (http://chessaria.com/))
 
 # News
+. NET Core, .NET Standard and Mac compilation (CHESSARIA define)
+
 . Null move in FEN
 
 . Faster Clear Hash option
@@ -16,7 +18,7 @@ Chess Engine Alfil sf Battles in C# (new UCI protocol and modifications for Ches
 
 . Level option (1 - 16). New algorithm using Bernstein Binomial
 
-. LevelELO. Use Old algorithm
+. LevelELO. Use Old algorithm != Chessaria LevelELO
 
 . Collectible white and black
 
@@ -48,7 +50,7 @@ Chess Engine Alfil sf Battles in C# (new UCI protocol and modifications for Ches
 
 # Components
 
-Book - Polyglot format
+Book - Polyglot format (BOOK define)
 
 EngineConsole - UCI protocol and testing Chessaria - Default: 
 

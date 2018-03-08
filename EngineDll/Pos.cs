@@ -260,7 +260,7 @@ namespace Motor
     //---------------------------------------------------------------------------------------------------------
     public bitbrd Jaques()
     {
-      if (m_Mission[m_clrActivo].m_nMissionType == cMission.CHECKMATE)
+      if (m_Mission[m_clrActivo].m_nMissionType == cMission.CHECKMATE || m_Mission[cTypes.Contrario(m_clrActivo)].m_nMissionType == cMission.CHECKMATE)
         return m_PosInfo.checkersBB;
       else
         return 0;
@@ -936,7 +936,7 @@ namespace Motor
         }
       }
 
-      if (cTypes.TipoPieza(GetPieza(from)) == cPieza.REY && m_Mission[us].m_nMissionType == cMission.CHECKMATE)
+      if (cTypes.TipoPieza(GetPieza(from)) == cPieza.REY && (m_Mission[us].m_nMissionType == cMission.CHECKMATE || (m_Mission[cTypes.Contrario(us)].m_nMissionType == cMission.CHECKMATE)))
         return cTypes.TipoMovimiento(m) == cMovType.ENROQUE || 0 == (AtaquesA(cTypes.GetToCasilla(m)) & PiezasColor(cTypes.Contrario(us)));
 
       return 0 == pinned
@@ -996,8 +996,9 @@ namespace Motor
           if (cBitBoard.MayorQue(Jaques()))
             return false;
 
-          if (0 == ((cBitBoard.Entre(cBitBoard.LSB(Jaques()), GetRey(us)) | Jaques()) & cBitBoard.m_nCasillas[to]))
-            return false;
+          if (cTypes.IsCasillaOcupable(GetRey(us)))
+            if (0 == ((cBitBoard.Entre(cBitBoard.LSB(Jaques()), GetRey(us)) | Jaques()) & cBitBoard.m_nCasillas[to]))
+              return false;
         }
 
 

@@ -646,7 +646,7 @@ namespace Motor
       nPuntos += EvalPiezas(pos, eval, movilidad, areaMovilidad, cPieza.CABALLO, cColor.BLANCO);
       nPuntos += cEval.SetPesos(movilidad[cColor.BLANCO] - movilidad[cColor.NEGRO], m_Pesos[cEvalPesos.MOVILIDAD]);
 
-      if (pos.m_Mission[pos.ColorMueve()].m_nMissionType == cMission.CHECKMATE)
+      if (pos.m_Mission[pos.ColorMueve()].m_nMissionType == cMission.CHECKMATE || pos.m_Mission[cTypes.Contrario(pos.ColorMueve())].m_nMissionType == cMission.CHECKMATE)
       {
         nPuntos += EvalRey(pos, eval, cColor.BLANCO) - EvalRey(pos, eval, cColor.NEGRO);
       }

@@ -18,8 +18,8 @@ namespace Motor
     public static cThreadPool m_Threads = new cThreadPool();
     public static cTablaHash m_TablaHash = new cTablaHash();
     public static cConsola m_Consola = new cConsola(System.Console.In, System.Console.Out);
-    private static string m_strInfo = "Alfil sf Battles Engine 17.10.06 (beta)";
-    private static string m_strAutor = "id author Enrique Sanchez";
+    private static string m_strInfo = "Chessaria AI Engine 18.3.8";
+    private static string m_strAutor = "id author Enrique Sanchez Acosta";
     public static cConfigFile m_ConfigFile = new cConfigFile(Process.GetCurrentProcess().ProcessName +".cfg");
     public static cUci m_UCI = new cUci();
 

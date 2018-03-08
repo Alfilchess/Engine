@@ -229,7 +229,7 @@ namespace Book
       byte[] buffer = new byte[16 * 1024]; // Fairly arbitrary size
       int bytesRead;
 
-      while((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+      while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
       {
         output.Write(buffer, 0, bytesRead);
       }
@@ -241,13 +241,13 @@ namespace Book
       int low = 0, mid, high = (int)(m_Stream.Length / SIZE_OF_BOOKENTRY) - 1;
       cPolyglotBook.stLineaLibro e = new cPolyglotBook.stLineaLibro();
 
-      while(low < high)
+      while (low < high)
       {
         mid = (low + high) / 2;
 
         m_Stream.Seek(mid * SIZE_OF_BOOKENTRY, SeekOrigin.Begin);
         Read(ref e);
-        if(clave <= e.key)
+        if (clave <= e.key)
           high = mid;
         else
           low = mid + 1;
@@ -259,7 +259,7 @@ namespace Book
     //------------------------------------------------------------------------------------
     public bool Read(ref cPolyglotBook.stLineaLibro e)
     {
-      if(m_Stream.Length == m_Stream.Position)
+      if (m_Stream.Length == m_Stream.Position)
         return false;
 
       byte[] byteReg = new byte[SIZE_OF_BOOKENTRY];
@@ -305,10 +305,10 @@ namespace Book
       {
         //Assembly myAssembly = Assembly.GetExecutingAssembly();
         //Stream memStream = myAssembly.GetManifestResourceStream("alfilbk.bin.gz");
-        using(Stream stream = new MemoryStream(Book.Properties.Resources.ExperimentalEnginebk_bin))
+        using (Stream stream = new MemoryStream(Book.Properties.Resources.ExperimentalEnginebk_bin))
         {
           GZipStream Gzipstream = new GZipStream(stream, CompressionMode.Decompress);
-          m_Stream=new MemoryStream();
+          m_Stream = new MemoryStream();
           CopyTo(Gzipstream, m_Stream);
         }
       }

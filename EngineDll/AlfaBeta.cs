@@ -180,6 +180,55 @@ namespace Motor
       mov bestMove = cSearch.RootMoves[0].m_PV[0];
       int nLevelRoot = 0;
 
+      if (bChessaria)
+      {
+        cSearch.m_nFilterC = float.Parse(cMotor.m_mapConfig["LevelFilterC"].getString());
+        cSearch.m_nFilterK = float.Parse(cMotor.m_mapConfig["LevelFilterK"].getString());
+
+        /* BEGIN TEST DAVID BILEMDJIAN*/
+        List<MonteCarlo.Move> moves = new List<MonteCarlo.Move>();
+
+        for (int i = 0; i < cSearch.RootMoves.Count; i++)
+        {
+          //bool updated = (i <= cSearch.nIndexPV);
+          //val v = (updated ? cSearch.RootMoves[i].m_nVal : cSearch.RootMoves[i].m_LastVal);
+          val v = (cSearch.RootMoves[i].m_nVal == -cValoresJuego.INFINITO) ? cSearch.RootMoves[i].m_LastVal : cSearch.RootMoves[i].m_nVal;
+
+          cRaizMov nRootMove = cSearch.RootMoves[i];
+          moves.Add(new MonteCarlo.Move(cUci.GetMovimiento(nRootMove.m_PV[0], false),
+                          i,
+                          (v * 100f / cValoresJuego.PEON_FINAL))
+            );
+        }
+        /*				
+				 	int index = 0;
+				 	foreach (cRaizMov nRootMove in cSearch.RootMoves)
+					{
+						moves.Add(new MonteCarlo.Move(cUci.GetMovimiento(nRootMove.m_PV[0], false),
+														index++,
+														(nRootMove.m_LastVal * 100 / cValoresJuego.PEON_FINAL))
+							);
+					}
+								*/
+
+        nLevelRoot = MonteCarlo.Find(nLevel, moves, cSearch.m_nFilterK, cSearch.m_nFilterC);
+
+        // END TEST DAVID BILEMDJIAN
+        /**/
+
+        /*
+				List<int> movesScores = new List<int>();
+				foreach (cRaizMov nRootMove in cSearch.RootMoves)
+				{
+					movesScores.Add((nRootMove.m_LastVal * 100 / cValoresJuego.PEON_FINAL));
+					//string strMov = cUci.GetMovimiento(nRootMove.m_PV[0], false);
+				}
+				nLevelRoot = MonteCarlo.Find(nLevel, movesScores, m_nFilterK, m_nFilterC);
+				*/
+
+        bestMove = cSearch.RootMoves[nLevelRoot].m_PV[0];
+      }
+      else
       {
         double percent = ((nLevel + 1) * 100) / cConfigFile.MAX_LEVEL;
         int nMinus = 0;
@@ -223,7 +272,7 @@ namespace Motor
 
       return bestMove;
     }
-    
+
     //-----------------------------------------------------------------------------------------------------
     public static void BusquedaRecursiva(cPosicion pos)
     {
@@ -249,8 +298,10 @@ namespace Motor
       MultiPV = Math.Min(cMotor.m_mapConfig["MultiPV"].Get(), RootMoves.Count);
 
       if (cMotor.m_ConfigFile.m_nNivelJuego < cConfigFile.MAX_LEVEL || (cMotor.m_mapConfig.ContainsKey("UCI_LimitStrength") && cMotor.m_mapConfig["UCI_Elo"].Get() < cConfigFile.MAX_LEVEL_ELO))
+      {
+        cMotor.m_mapConfig["MultiPV"].setCurrentValue(MultiPV.ToString());
         MultiPV = RootMoves.Count;//Math.Min(cMotor.m_ConfigFile.m_nNivelJuego, RootMoves.Count);
-
+      }
       while (++depth <= cSearch.MAX_PLY && !m_Sennales.STOP && (0 == m_Limites.depth || depth <= m_Limites.depth))
       {
 

@@ -164,7 +164,8 @@ namespace Motor
     {
       StringBuilder s = new StringBuilder();
       long elaspsed = cReloj.Now() - cSearch.SearchTime + 1;
-      int uciPVSize = Math.Min(cMotor.m_mapConfig["MultiPV"].Get(), cSearch.RootMoves.Count);
+      //int uciPVSize = Math.Min(cMotor.m_mapConfig["MultiPV"].Get(), cSearch.RootMoves.Count);
+      int uciPVSize = Math.Min(cSearch.MultiPV, cSearch.RootMoves.Count);
       int selDepth = 0;
       for (int i = 0; i < cMotor.m_Threads.Count; ++i)
         if (cMotor.m_Threads[i].m_nMaxPly > selDepth)
@@ -203,8 +204,11 @@ namespace Motor
             s.Append((pos.GetNodos() * 1000 / (UInt64)elaspsed).ToString());
             s.Append(" time ");
             s.Append(elaspsed);
+#if CHESSARIA
+#else
             s.Append(" cpuload ");
             s.Append(cCpu.m_CPU.Get() * 10);
+#endif
             s.Append(" hashfull ");
             s.Append(cMotor.m_TablaHash.HashFullPercent());
             s.Append(" tbhits ");

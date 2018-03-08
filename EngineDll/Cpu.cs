@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 using System.Diagnostics;
 
+#if CHESSARIA
+#else
 namespace Motor
 {
   //------------------------------------------------------------------------------
@@ -118,3 +120,4 @@ namespace Motor
     }
   }
 }
+#endif

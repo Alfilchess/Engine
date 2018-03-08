@@ -350,7 +350,10 @@ namespace Motor
       mPos=Piezas(pos, mlist, mPos, us, target, ci, cPieza.ALFIL, Checks);
       mPos=Piezas(pos, mlist, mPos, us, target, ci, cPieza.TORRE, Checks);
       mPos=Piezas(pos, mlist, mPos, us, target, ci, cPieza.DAMA, Checks);
-      
+
+      if (pos.m_Mission[us].m_nMissionType != cMission.CHECKMATE && pos.GetNum(us, cPieza.REY) > 1)
+        mPos = Piezas(pos, mlist, mPos, us, target, ci, cPieza.REY, Checks);
+
       if (Type!=cMovType.QUIET_CHECKS&&Type!=cMovType.EVASIONS)
       {
         sq ksq = pos.GetRey(us);
